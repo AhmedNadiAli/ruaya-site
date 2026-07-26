@@ -154,16 +154,10 @@
         (function() {
             // ========== جلب البيانات من app.js ==========
             const weekDays = window.weekDays || [
-                { name: 'السبت' },
-                { name: 'الأحد' },
-                { name: 'الإثنين' },
-                { name: 'الثلاثاء' },
-                { name: 'الأربعاء' },
-                { name: 'الخميس' },
-                { name: 'الجمعة' }
+                { name: 'السبت' }, { name: 'الأحد' }, { name: 'الإثنين' },
+                { name: 'الثلاثاء' }, { name: 'الأربعاء' }, { name: 'الخميس' }, { name: 'الجمعة' }
             ];
 
-            // نستخدم dayTasks من app.js (عشان التطابق)
             let dayTasks = window.dayTasks || {};
 
             // ========== دوال مساعدة ==========
@@ -175,25 +169,39 @@
                 localStorage.setItem('ruaya_user', JSON.stringify(user));
             }
 
-            // ========== حساب الأيام المفتوحة ==========
+            // ========== حساب الأيام المفتوحة (مع الوقت) ==========
             function calculateUnlockedDays() {
                 const user = getUserData();
                 const completedTasks = user.completedTasks || {};
+                const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
                 
-                // نتحقق من كل يوم: إذا كان مكتمل، نفتح اللي بعده
-                let unlocked = 1;
-                for (let i = 0; i < 6; i++) {
+                // ضبط بداية الأسبوع على السبت
+                const startDay = weekStart.getDay();
+                const saturdayOffset = (startDay + 1) % 7;
+                const saturday = new Date(weekStart);
+                saturday.setDate(weekStart.getDate() - saturdayOffset);
+                
+                const now = new Date();
+                const diffHours = (now - saturday) / (1000 * 60 * 60);
+                
+                // كل 12 ساعة يفتح يوم جديد
+                let unlocked = Math.floor(diffHours / 12) + 1;
+                if (unlocked < 1) unlocked = 1;
+                if (unlocked > 7) unlocked = 7;
+                
+                // التحقق من إكمال اليوم السابق
+                for (let i = 0; i < unlocked - 1; i++) {
                     const tasks = dayTasks[i] || [];
                     let allDone = true;
                     tasks.forEach(task => {
                         if (!completedTasks[task.id]) allDone = false;
                     });
-                    if (allDone) {
-                        unlocked = i + 2;
-                    } else {
+                    if (!allDone) {
+                        unlocked = i + 1;
                         break;
                     }
                 }
+                
                 return Math.min(unlocked, 7);
             }
 
@@ -254,8 +262,9 @@
                     if (isUnlocked) {
                         item.addEventListener('click', () => openDayDetail(index));
                     } else {
+                        const hoursLeft = 12 - (new Date() - new Date(user.weekStartDate || Date.now())) / (1000 * 60 * 60) % 12;
                         item.addEventListener('click', () => {
-                            alert('🔒 هذا اليوم مقفل. أنهِ مهام اليوم السابق أولاً');
+                            alert(`🔒 هذا اليوم مقفل. سيتم فتحه بعد ${Math.ceil(hoursLeft)} ساعة تقريباً`);
                         });
                     }
 
@@ -323,6 +332,10 @@
                             if (window.updateWeeklyProgress) {
                                 window.updateWeeklyProgress(userData);
                             }
+                            // ✅ تحديث الأوائل
+                            if (window.loadLeaderboard) {
+                                window.loadLeaderboard();
+                            }
                         });
 
                         const infoDiv = document.createElement('div');
@@ -368,7 +381,6 @@
                 // التأكد من وجود dayTasks
                 if (Object.keys(dayTasks).length === 0) {
                     console.warn('⚠️ dayTasks مش موجودة في app.js، استخدم بيانات افتراضية');
-                    // بيانات افتراضية (للتجربة)
                     dayTasks = {
                         0: [{ id: 'sat_fajr', title: 'صلاة الفجر', desc: 'إلزامي', time: '٤:٣٠' }],
                         1: [{ id: 'sun_fajr', title: 'صلاة الفجر', desc: 'إلزامي', time: '٤:٣٠' }],

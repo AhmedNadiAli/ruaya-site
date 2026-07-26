@@ -50,109 +50,8 @@ async function getUser() {
     return localUser;
 }
 
-// ========== دوال Onboarding ==========
-async function saveOnboardingData(formData) {
-    try {
-        let user = getLocalUser();
-        if (!user) {
-            alert('يرجى تسجيل الدخول أولاً');
-            window.location.href = 'login.html';
-            return;
-        }
-
-        user.name = formData.name || user.name || 'أحمد نادي';
-        user.path = formData.path;
-        user.year = formData.year;
-        user.specialization = formData.specialization || '';
-        user.weakSubjects = formData.weakSubjects || [];
-        user.preferredTime = formData.preferredTime;
-        user.goalScore = formData.goalScore || 500;
-        user.onboardingDone = true;
-        
-        saveLocalUser(user);
-
-        if (user.id) {
-            try {
-                await apiRequest(`/users/${user.id}`, 'PUT', {
-                    name: user.name,
-                    path: user.path,
-                    year: user.year,
-                    specialization: user.specialization,
-                    weakSubjects: user.weakSubjects,
-                    preferredTime: user.preferredTime,
-                    goalScore: user.goalScore,
-                    onboardingDone: true
-                });
-                console.log('✅ تم حفظ التهيئة على السيرفر');
-            } catch (e) {
-                console.warn('⚠️ فشل حفظ على السيرفر، البيانات محفوظة محلياً');
-            }
-        }
-
-        window.location.href = 'dashboard.html';
-    } catch (error) {
-        console.error('❌ خطأ في حفظ التهيئة:', error);
-        window.location.href = 'dashboard.html';
-    }
-}
-
-// ========== دوال تسجيل الدخول ==========
-window.loginUser = async function(email, password) {
-    try {
-        const result = await apiRequest('/users/login', 'POST', { email, password });
-        if (result && result.user) {
-            const userData = {
-                ...result.user,
-                onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
-            };
-            saveLocalUser(userData);
-            return { user: userData };
-        }
-        throw new Error('بيانات غير صحيحة');
-    } catch (error) {
-        console.error('❌ خطأ في تسجيل الدخول:', error);
-        throw error;
-    }
-};
-
-// ========== دوال التسجيل ==========
-window.registerUser = async function(name, email, password, path = 'medicine', year = '2') {
-    try {
-        const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year });
-        if (result && result.id) {
-            const userData = {
-                id: result.id,
-                name: name,
-                email: email,
-                path: path,
-                year: year,
-                specialization: '',
-                weakSubjects: [],
-                preferredTime: 'morning',
-                goalScore: 500,
-                onboardingDone: false,
-                points: 0,
-                streak: 0,
-                progress: 0,
-                completedTasks: {},
-                badges: {},
-                weeklyProgress: {},
-                lastPathChange: null,
-                avatarUrl: '',
-                createdAt: new Date().toISOString()
-            };
-            saveLocalUser(userData);
-            return { user: userData };
-        }
-        throw new Error('فشل التسجيل');
-    } catch (error) {
-        console.error('❌ خطأ في التسجيل:', error);
-        throw error;
-    }
-};
-
 // ==========================================
-// ========== نظام المهام والأسبوع ==========
+// ========== نظام المهام والأسبوع (مع الوقت) ==========
 // ==========================================
 
 // ========== بيانات الأيام والمهام ==========
@@ -271,23 +170,44 @@ function getTodayTasks(completedTasks) {
     return { total, done, remaining: total - done };
 }
 
-// ========== حساب اليوم الحالي (يبدأ من السبت) ==========
+// ========== حساب اليوم الحالي (مع مراعاة الوقت) ==========
 function getCurrentDayIndex() {
     const user = getLocalUser();
     if (!user) return 0;
+    
+    // تاريخ بدء الأسبوع
     const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
     // ضبط بداية الأسبوع على السبت
-    const startDay = weekStart.getDay(); // 0=الأحد, 6=السبت
+    const startDay = weekStart.getDay();
     const saturdayOffset = (startDay + 1) % 7;
     const saturday = new Date(weekStart);
     saturday.setDate(weekStart.getDate() - saturdayOffset);
     
+    // حساب عدد الأيام المفتوحة بناءً على الوقت (كل 12 ساعة يفتح يوم جديد)
     const now = new Date();
-    const diffDays = Math.floor((now - saturday) / (24 * 60 * 60 * 1000));
-    return Math.min(Math.max(diffDays, 0), 6);
+    const diffHours = (now - saturday) / (1000 * 60 * 60);
+    // كل 12 ساعة يفتح يوم جديد
+    let unlockedDays = Math.floor(diffHours / 12) + 1;
+    if (unlockedDays < 1) unlockedDays = 1;
+    if (unlockedDays > 7) unlockedDays = 7;
+    
+    // التحقق من إكمال اليوم السابق (لا نفتح اليوم الجديد إلا إذا اكتمل السابق)
+    for (let i = 0; i < unlockedDays - 1; i++) {
+        const tasks = dayTasks[i] || [];
+        let allDone = true;
+        tasks.forEach(task => {
+            if (!user.completedTasks || !user.completedTasks[task.id]) allDone = false;
+        });
+        if (!allDone) {
+            unlockedDays = i + 1;
+            break;
+        }
+    }
+    
+    return Math.min(unlockedDays - 1, 6);
 }
 
-// ========== دوال النقاط والتقدم في Dashboard ==========
+// ========== تحديث الواجهة ==========
 function updateStatsInUI(user) {
     const completedTasks = user.completedTasks || {};
     const stats = calculateStats(completedTasks);
@@ -537,6 +457,7 @@ async function loadLeaderboard() {
             }
         }
 
+        // حساب النقاط لكل مستخدم
         users.forEach(user => {
             const stats = calculateStats(user.completedTasks || {});
             user._points = stats.points;
@@ -545,6 +466,7 @@ async function loadLeaderboard() {
             user._badgesCount = user.badges ? Object.values(user.badges).filter(v => v === true).length : 0;
         });
 
+        // الترتيب حسب النقاط (تنازلياً)
         users.sort((a, b) => (b._points || 0) - (a._points || 0));
 
         let html = '';
@@ -570,6 +492,11 @@ async function loadLeaderboard() {
         });
 
         container.innerHTML = html;
+
+        // تحديث أزرار الفلتر
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === 'points');
+        });
 
     } catch (error) {
         console.error('❌ خطأ في جلب الأوائل:', error);
@@ -656,7 +583,118 @@ function getSpecializationOptions(path) {
     return map[path] || [];
 }
 
-// ========== دوال تشغيل الصفحات ==========
+// ========== دوال Onboarding ==========
+async function saveOnboardingData(formData) {
+    try {
+        let user = getLocalUser();
+        if (!user) {
+            alert('يرجى تسجيل الدخول أولاً');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        user.name = formData.name || user.name || 'أحمد نادي';
+        user.path = formData.path;
+        user.year = formData.year;
+        user.specialization = formData.specialization || '';
+        user.weakSubjects = formData.weakSubjects || [];
+        user.preferredTime = formData.preferredTime;
+        user.goalScore = formData.goalScore || 500;
+        user.onboardingDone = true;
+        // تعيين تاريخ بدء الأسبوع (اليوم)
+        if (!user.weekStartDate) {
+            user.weekStartDate = new Date().toISOString();
+        }
+        
+        saveLocalUser(user);
+
+        if (user.id) {
+            try {
+                await apiRequest(`/users/${user.id}`, 'PUT', {
+                    name: user.name,
+                    path: user.path,
+                    year: user.year,
+                    specialization: user.specialization,
+                    weakSubjects: user.weakSubjects,
+                    preferredTime: user.preferredTime,
+                    goalScore: user.goalScore,
+                    onboardingDone: true,
+                    weekStartDate: user.weekStartDate
+                });
+                console.log('✅ تم حفظ التهيئة على السيرفر');
+            } catch (e) {
+                console.warn('⚠️ فشل حفظ على السيرفر، البيانات محفوظة محلياً');
+            }
+        }
+
+        window.location.href = 'dashboard.html';
+    } catch (error) {
+        console.error('❌ خطأ في حفظ التهيئة:', error);
+        window.location.href = 'dashboard.html';
+    }
+}
+
+// ========== دوال تسجيل الدخول ==========
+window.loginUser = async function(email, password) {
+    try {
+        const result = await apiRequest('/users/login', 'POST', { email, password });
+        if (result && result.user) {
+            const userData = {
+                ...result.user,
+                onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
+            };
+            // حفظ weekStartDate لو مش موجود
+            if (!userData.weekStartDate) {
+                userData.weekStartDate = new Date().toISOString();
+            }
+            saveLocalUser(userData);
+            return { user: userData };
+        }
+        throw new Error('بيانات غير صحيحة');
+    } catch (error) {
+        console.error('❌ خطأ في تسجيل الدخول:', error);
+        throw error;
+    }
+};
+
+// ========== دوال التسجيل ==========
+window.registerUser = async function(name, email, password, path = 'medicine', year = '2') {
+    try {
+        const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year });
+        if (result && result.id) {
+            const userData = {
+                id: result.id,
+                name: name,
+                email: email,
+                path: path,
+                year: year,
+                specialization: '',
+                weakSubjects: [],
+                preferredTime: 'morning',
+                goalScore: 500,
+                onboardingDone: false,
+                points: 0,
+                streak: 0,
+                progress: 0,
+                completedTasks: {},
+                badges: {},
+                weeklyProgress: {},
+                lastPathChange: null,
+                avatarUrl: '',
+                weekStartDate: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            };
+            saveLocalUser(userData);
+            return { user: userData };
+        }
+        throw new Error('فشل التسجيل');
+    } catch (error) {
+        console.error('❌ خطأ في التسجيل:', error);
+        throw error;
+    }
+};
+
+// ========== تشغيل الصفحات ==========
 document.addEventListener('DOMContentLoaded', function() {
     const path = window.location.pathname.split('/').pop();
     if (path === 'dashboard.html' || path === '') loadDashboard();
@@ -741,3 +779,4 @@ function getUserSubjects(user) {
 window.getUserSubjects = getUserSubjects;
 
 console.log('🚀 رؤية شغالة (السيرفر هو الأساسي، localStorage احتياطي)');
+console.log('✅ نظام فتح الأيام: كل 12 ساعة + إكمال اليوم السابق');
