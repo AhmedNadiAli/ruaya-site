@@ -210,39 +210,15 @@
             }
 
             try {
-                // محاولة التسجيل في السيرفر
-                const result = await window.registerUser(fullName, schoolEmail, password, 'medicine', '2');
-                
-                if (result && result.id) {
-                    // ✅ بناء كائن المستخدم يدوياً (لأن السيرفر بيرجع id بس)
-                    const userData = {
-                        id: result.id,
-                        name: fullName,
-                        email: schoolEmail,
-                        path: 'medicine',
-                        year: '2',
-                        specialization: '',
-                        weakSubjects: [],
-                        preferredTime: 'morning',
-                        goalScore: 500,
-                        onboardingDone: false,
-                        points: 0,
-                        streak: 0,
-                        progress: 0,
-                        completedTasks: {},
-                        badges: {},
-                        weeklyProgress: {},
-                        lastPathChange: null,
-                        avatarUrl: '',
-                        createdAt: new Date().toISOString()
-                    };
+                const result = await window.registerUser(fullName, schoolEmail, password, 'medicine', '2', {
+                    studentId,
+                    parentPhone
+                });
 
-                    // حفظ في localStorage
-                    localStorage.setItem('ruaya_user', JSON.stringify(userData));
-
+                if (result && result.user && result.user.id) {
                     messageEl.textContent = '✅ تم التسجيل بنجاح! جارٍ التحويل...';
                     messageEl.className = 'success';
-                    
+
                     setTimeout(() => {
                         window.location.href = 'onboarding.html';
                     }, 1500);

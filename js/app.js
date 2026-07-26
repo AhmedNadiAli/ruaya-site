@@ -4,6 +4,18 @@
 
 const API_BASE_URL = 'https://ruaya-backend-production.up.railway.app/api';
 
+const PATH_NAMES = {
+    medicine: 'طب وعلوم حياة',
+    engineering: 'هندسة وعلوم حاسب',
+    arts: 'آداب وفنون',
+    business: 'إدارة أعمال'
+};
+
+const PROTECTED_PAGES = [
+    'dashboard.html', 'plan.html', 'week.html', 'subjects.html',
+    'exams.html', 'leaderboard.html', 'profile.html', 'onboarding.html'
+];
+
 // ========== دوال مساعدة للـ API ==========
 async function apiRequest(endpoint, method = 'GET', data = null) {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -11,6 +23,8 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
         method: method,
         headers: { 'Content-Type': 'application/json' }
     };
+    const token = localStorage.getItem('ruaya_token');
+    if (token) options.headers['Authorization'] = `Bearer ${token}`;
     if (data) options.body = JSON.stringify(data);
     try {
         const response = await fetch(url, options);
@@ -31,6 +45,45 @@ function getLocalUser() {
 
 function saveLocalUser(user) {
     localStorage.setItem('ruaya_user', JSON.stringify(user));
+}
+
+function saveAuthToken(token) {
+    if (token) localStorage.setItem('ruaya_token', token);
+}
+
+function logoutUser() {
+    localStorage.removeItem('ruaya_user');
+    localStorage.removeItem('ruaya_token');
+}
+
+function requireAuth() {
+    const page = window.location.pathname.split('/').pop();
+    if (!PROTECTED_PAGES.includes(page)) return;
+    if (!getLocalUser()) window.location.href = 'login.html';
+}
+
+function updateSidebarUser(user) {
+    if (!user || !user.name) return;
+    const pathLabel = `${PATH_NAMES[user.path] || 'مسار'} • ${user.year === '2' ? 'السنة التانية' : 'السنة التالتة'}`;
+    document.querySelectorAll('.user-avatar').forEach(el => { el.textContent = user.name.charAt(0); });
+    document.querySelectorAll('.user-info h4, #sidebarName').forEach(el => { el.textContent = user.name; });
+    document.querySelectorAll('.user-info span, #sidebarPath').forEach(el => { el.textContent = pathLabel; });
+}
+
+async function syncUserProgress(user) {
+    if (!user || !user.id) return;
+    const stats = calculateStats(user.completedTasks || {});
+    const payload = {
+        completedTasks: user.completedTasks || {},
+        points: stats.points,
+        streak: stats.streak,
+        progress: stats.progress
+    };
+    try {
+        await apiRequest(`/users/${user.id}`, 'PUT', payload);
+    } catch (e) {
+        console.warn('⚠️ فشل مزامنة التقدم مع السيرفر');
+    }
 }
 
 // ========== دالة getUser ==========
@@ -60,7 +113,11 @@ async function saveOnboardingData(formData) {
             return;
         }
 
-        user.name = formData.name || user.name || 'أحمد نادي';
+        user.name = formData.name || user.name;
+        if (!user.name) {
+            alert('الاسم مطلوب');
+            return;
+        }
         user.path = formData.path;
         user.year = formData.year;
         user.specialization = formData.specialization || '';
@@ -106,6 +163,7 @@ window.loginUser = async function(email, password) {
                 onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
             };
             saveLocalUser(userData);
+            if (result.token) saveAuthToken(result.token);
             return { user: userData };
         }
         throw new Error('بيانات غير صحيحة');
@@ -116,14 +174,20 @@ window.loginUser = async function(email, password) {
 };
 
 // ========== دوال التسجيل ==========
-window.registerUser = async function(name, email, password, path = 'medicine', year = '2') {
+window.registerUser = async function(name, email, password, path = 'medicine', year = '2', extra = {}) {
     try {
-        const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year });
+        const result = await apiRequest('/users/register', 'POST', {
+            name, email, password, path, year,
+            studentId: extra.studentId || '',
+            parentPhone: extra.parentPhone || ''
+        });
         if (result && result.id) {
             const userData = {
                 id: result.id,
                 name: name,
                 email: email,
+                studentId: extra.studentId || '',
+                parentPhone: extra.parentPhone || '',
                 path: path,
                 year: year,
                 specialization: '',
@@ -142,6 +206,7 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
                 createdAt: new Date().toISOString()
             };
             saveLocalUser(userData);
+            if (result.token) saveAuthToken(result.token);
             return { user: userData };
         }
         throw new Error('فشل التسجيل');
@@ -305,28 +370,29 @@ async function loadDashboard() {
             return;
         }
 
-        document.getElementById('userName').textContent = user.name.split(' ')[0];
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) userNameEl.textContent = user.name.split(' ')[0];
         updateStatsInUI(user);
+        updateSidebarUser(user);
 
-        document.querySelector('.user-avatar').textContent = user.name.charAt(0);
-        document.querySelector('.user-info h4').textContent = user.name;
-        const pathNames = {
-            'medicine': 'طب وعلوم حياة',
-            'engineering': 'هندسة وعلوم حاسب',
-            'arts': 'آداب وفنون',
-            'business': 'إدارة أعمال'
-        };
-        const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-        document.querySelector('.user-info span').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
-
-        updateWeeklyProgress(user);
+        const stats = calculateStats(user.completedTasks || {});
+        if (typeof window.renderPathNodes === 'function') {
+            window.renderPathNodes(stats.progress);
+        } else {
+            updateWeeklyProgress(user);
+        }
 
         setInterval(async () => {
             try {
                 const freshUser = await getUser();
                 if (freshUser) {
                     updateStatsInUI(freshUser);
-                    updateWeeklyProgress(freshUser);
+                    const freshStats = calculateStats(freshUser.completedTasks || {});
+                    if (typeof window.renderPathNodes === 'function') {
+                        window.renderPathNodes(freshStats.progress);
+                    } else {
+                        updateWeeklyProgress(freshUser);
+                    }
                 }
             } catch (e) {}
         }, 10000);
@@ -334,6 +400,68 @@ async function loadDashboard() {
     } catch (error) {
         console.error('❌ خطأ في تحميل Dashboard:', error);
     }
+}
+
+function renderPathNodes(progressPercent) {
+    const container = document.getElementById('pathNodes');
+    if (!container) return;
+
+    let currentWeek = 1;
+    if (progressPercent >= 75) currentWeek = 4;
+    else if (progressPercent >= 50) currentWeek = 3;
+    else if (progressPercent >= 25) currentWeek = 2;
+
+    const weeks = [
+        { num: 1, title: 'الأسبوع الأول' },
+        { num: 2, title: 'الأسبوع الثاني' },
+        { num: 3, title: 'الأسبوع الثالث' },
+        { num: 4, title: 'الأسبوع الرابع' },
+        { num: 5, title: 'نهاية الشهر', isFinal: true }
+    ];
+
+    let html = '';
+    weeks.forEach((w, index) => {
+        const weekNum = index + 1;
+        let circleClass = 'locked';
+        let circleContent = w.isFinal ? '🏆' : w.num;
+        let badgeText = 'مقفل';
+        let badgeStyle = 'background:#f1f5f9;color:#94a3b8;';
+        let infoText = 'مقفل • يبدأ قريباً';
+
+        if (weekNum < currentWeek) {
+            circleClass = 'completed';
+            circleContent = '✓';
+            badgeText = 'مكتمل';
+            badgeStyle = 'background:#dcfce7;color:#16a34a;';
+            infoText = 'تم بنجاح • 100%';
+        } else if (weekNum === currentWeek && !w.isFinal) {
+            circleClass = 'current';
+            circleContent = w.num;
+            badgeText = 'الحالي';
+            badgeStyle = 'background:#ede9fe;color:#6d28d9;';
+            const weekProgress = Math.min(Math.max(progressPercent - ((currentWeek - 1) * 25), 0), 25);
+            infoText = `جاري الآن • ${Math.round(weekProgress)}%`;
+        } else if (w.isFinal && progressPercent >= 100) {
+            circleClass = 'completed';
+            circleContent = '🏆';
+            badgeText = 'مكتمل';
+            badgeStyle = 'background:#dcfce7;color:#16a34a;';
+            infoText = 'أحسنت! خلصت الشهر';
+        }
+
+        html += `
+            <div class="path-node" onclick="window.location.href='week.html'">
+                <div class="node-circle ${circleClass}">${circleContent}</div>
+                <div class="node-info">
+                    <h4>${w.title}</h4>
+                    <span>${infoText}</span>
+                </div>
+                <span class="node-badge" style="${badgeStyle}">${badgeText}</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
 }
 
 function updateWeeklyProgress(user) {
@@ -396,26 +524,50 @@ function updateWeeklyProgress(user) {
 async function loadProfile() {
     try {
         const user = await getUser();
-        if (!user) return;
+        if (!user) {
+            window.location.href = 'login.html';
+            return;
+        }
 
-        document.getElementById('profileName').textContent = user.name;
-        const pathNames = {
-            'medicine': 'طب وعلوم حياة',
-            'engineering': 'هندسة وعلوم حاسب',
-            'arts': 'آداب وفنون',
-            'business': 'إدارة أعمال'
-        };
+        updateSidebarUser(user);
+
+        const profileName = document.getElementById('profileName');
+        if (profileName) profileName.textContent = user.name;
         const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-        document.getElementById('profilePathYear').textContent = `${pathNames[user.path]} • ${yearText}`;
-        
-        const stats = calculateStats(user.completedTasks || {});
-        document.getElementById('profilePoints').textContent = stats.points;
-        document.getElementById('profileStreak').textContent = stats.streak;
-        document.getElementById('profileProgress').textContent = stats.progress + '%';
+        const profilePathYear = document.getElementById('profilePathYear');
+        if (profilePathYear) profilePathYear.textContent = `${PATH_NAMES[user.path] || 'مسار'} • ${yearText}`;
 
-        document.getElementById('editName').value = user.name;
-        document.getElementById('editPath').value = user.path;
-        document.getElementById('editYear').value = user.year;
+        const stats = calculateStats(user.completedTasks || {});
+        const profilePoints = document.getElementById('profilePoints');
+        if (profilePoints) profilePoints.textContent = stats.points;
+        const profileStreak = document.getElementById('profileStreak');
+        if (profileStreak) profileStreak.textContent = stats.streak;
+        const profileProgress = document.getElementById('profileProgress');
+        if (profileProgress) profileProgress.textContent = stats.progress + '%';
+
+        const editName = document.getElementById('editName');
+        if (editName) editName.value = user.name;
+        const editPath = document.getElementById('editPath');
+        if (editPath) editPath.value = user.path;
+        const editYear = document.getElementById('editYear');
+        if (editYear) editYear.value = user.year;
+
+        const detailPath = document.getElementById('detailPath');
+        if (detailPath) detailPath.textContent = PATH_NAMES[user.path] || 'لم يحدد';
+        const detailSpecialization = document.getElementById('detailSpecialization');
+        if (detailSpecialization) detailSpecialization.textContent = user.specialization || 'لم يحدد';
+        const detailYear = document.getElementById('detailYear');
+        if (detailYear) detailYear.textContent = yearText;
+        const detailGoal = document.getElementById('detailGoal');
+        if (detailGoal) detailGoal.textContent = user.goalScore || '500';
+        const timeMap = { morning: 'الصباح', afternoon: 'بعد الظهر', evening: 'بالليل' };
+        const detailTime = document.getElementById('detailTime');
+        if (detailTime) detailTime.textContent = timeMap[user.preferredTime] || 'لم يحدد';
+        const detailSubjects = document.getElementById('detailSubjects');
+        if (detailSubjects) {
+            const subjects = getUserSubjects(user);
+            detailSubjects.textContent = subjects.length > 0 ? subjects.join(' - ') : 'لم تحدد';
+        }
 
         renderBadges(user.badges || {});
     } catch (error) {
@@ -637,8 +789,9 @@ function getSpecializationOptions(path) {
     return map[path] || [];
 }
 
-// ========== تشغيل الصفحات ==========
 document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+    applyDarkMode();
     const path = window.location.pathname.split('/').pop();
     if (path === 'dashboard.html' || path === '') loadDashboard();
     else if (path === 'profile.html') loadProfile();
@@ -647,6 +800,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========== تصدير الدوال ==========
+window.renderPathNodes = renderPathNodes;
+window.syncUserProgress = syncUserProgress;
+window.updateSidebarUser = updateSidebarUser;
+window.logoutUser = logoutUser;
 window.saveOnboardingData = saveOnboardingData;
 window.getSpecializationOptions = getSpecializationOptions;
 window.saveProfile = saveProfile;

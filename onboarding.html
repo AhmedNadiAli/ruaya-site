@@ -254,26 +254,22 @@
         window.prevStep = function(current) { showStep(current - 1); };
 
         window.finishOnboarding = function() {
-            // التحقق من وقت المذاكرة
             if (!formData.preferredTime) {
                 alert('اختار وقت المذاكرة المفضل');
                 return;
             }
 
-            // ✅ طلب الاسم بطريقة آمنة
-            const nameInput = prompt('ادخل اسمك الثلاثي:', 'أحمد نادي');
-            if (nameInput === null || nameInput.trim() === '') {
-                alert('الاسم مطلوب للمتابعة');
+            const storedUser = JSON.parse(localStorage.getItem('ruaya_user') || '{}');
+            formData.name = storedUser.name || formData.name;
+            if (!formData.name) {
+                alert('الاسم مطلوب. سجّل من جديد أو أكمل بياناتك.');
                 return;
             }
-            formData.name = nameInput.trim();
 
-            // ✅ حفظ البيانات (مع تجاهل الأخطاء)
             try {
                 saveOnboardingData(formData);
             } catch (e) {
                 console.error('❌ خطأ:', e);
-                // حتى لو حصل خطأ، نحاول نروح للـ Dashboard
                 window.location.href = 'dashboard.html';
             }
         };
