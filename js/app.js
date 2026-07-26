@@ -170,12 +170,10 @@ function getTodayTasks(completedTasks) {
     return { total, done, remaining: total - done };
 }
 
-// ========== حساب اليوم الحالي (مع مراعاة الوقت) ==========
+// ========== حساب اليوم الحالي (كل 12 ساعة) ==========
 function getCurrentDayIndex() {
     const user = getLocalUser();
     if (!user) return 0;
-    
-    // تاريخ بدء الأسبوع
     const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
     // ضبط بداية الأسبوع على السبت
     const startDay = weekStart.getDay();
@@ -183,28 +181,13 @@ function getCurrentDayIndex() {
     const saturday = new Date(weekStart);
     saturday.setDate(weekStart.getDate() - saturdayOffset);
     
-    // حساب عدد الأيام المفتوحة بناءً على الوقت (كل 12 ساعة يفتح يوم جديد)
     const now = new Date();
     const diffHours = (now - saturday) / (1000 * 60 * 60);
-    // كل 12 ساعة يفتح يوم جديد
-    let unlockedDays = Math.floor(diffHours / 12) + 1;
-    if (unlockedDays < 1) unlockedDays = 1;
-    if (unlockedDays > 7) unlockedDays = 7;
-    
-    // التحقق من إكمال اليوم السابق (لا نفتح اليوم الجديد إلا إذا اكتمل السابق)
-    for (let i = 0; i < unlockedDays - 1; i++) {
-        const tasks = dayTasks[i] || [];
-        let allDone = true;
-        tasks.forEach(task => {
-            if (!user.completedTasks || !user.completedTasks[task.id]) allDone = false;
-        });
-        if (!allDone) {
-            unlockedDays = i + 1;
-            break;
-        }
-    }
-    
-    return Math.min(unlockedDays - 1, 6);
+    // كل 12 ساعة يفتح يوم جديد (بدون شروط إضافية)
+    let unlocked = Math.floor(diffHours / 12) + 1;
+    if (unlocked < 1) unlocked = 1;
+    if (unlocked > 7) unlocked = 7;
+    return unlocked - 1; // index 0-based
 }
 
 // ========== تحديث الواجهة ==========
@@ -457,7 +440,6 @@ async function loadLeaderboard() {
             }
         }
 
-        // حساب النقاط لكل مستخدم
         users.forEach(user => {
             const stats = calculateStats(user.completedTasks || {});
             user._points = stats.points;
@@ -466,7 +448,6 @@ async function loadLeaderboard() {
             user._badgesCount = user.badges ? Object.values(user.badges).filter(v => v === true).length : 0;
         });
 
-        // الترتيب حسب النقاط (تنازلياً)
         users.sort((a, b) => (b._points || 0) - (a._points || 0));
 
         let html = '';
@@ -493,7 +474,6 @@ async function loadLeaderboard() {
 
         container.innerHTML = html;
 
-        // تحديث أزرار الفلتر
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.filter === 'points');
         });
@@ -601,7 +581,6 @@ async function saveOnboardingData(formData) {
         user.preferredTime = formData.preferredTime;
         user.goalScore = formData.goalScore || 500;
         user.onboardingDone = true;
-        // تعيين تاريخ بدء الأسبوع (اليوم)
         if (!user.weekStartDate) {
             user.weekStartDate = new Date().toISOString();
         }
@@ -643,7 +622,6 @@ window.loginUser = async function(email, password) {
                 ...result.user,
                 onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
             };
-            // حفظ weekStartDate لو مش موجود
             if (!userData.weekStartDate) {
                 userData.weekStartDate = new Date().toISOString();
             }
@@ -779,4 +757,4 @@ function getUserSubjects(user) {
 window.getUserSubjects = getUserSubjects;
 
 console.log('🚀 رؤية شغالة (السيرفر هو الأساسي، localStorage احتياطي)');
-console.log('✅ نظام فتح الأيام: كل 12 ساعة + إكمال اليوم السابق');
+console.log('✅ نظام فتح الأيام: كل 12 ساعة (بدون شروط إضافية)');

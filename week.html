@@ -148,7 +148,7 @@
     <script src="js/app.js"></script>
     <script>
         // ==========================================
-        // صفحة الأسبوع (متوافقة مع app.js)
+        // صفحة الأسبوع (مع تحديث السيرفر)
         // ==========================================
 
         (function() {
@@ -169,13 +169,10 @@
                 localStorage.setItem('ruaya_user', JSON.stringify(user));
             }
 
-            // ========== حساب الأيام المفتوحة (مع الوقت) ==========
+            // ========== حساب الأيام المفتوحة (كل 12 ساعة) ==========
             function calculateUnlockedDays() {
                 const user = getUserData();
-                const completedTasks = user.completedTasks || {};
                 const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
-                
-                // ضبط بداية الأسبوع على السبت
                 const startDay = weekStart.getDay();
                 const saturdayOffset = (startDay + 1) % 7;
                 const saturday = new Date(weekStart);
@@ -183,26 +180,10 @@
                 
                 const now = new Date();
                 const diffHours = (now - saturday) / (1000 * 60 * 60);
-                
-                // كل 12 ساعة يفتح يوم جديد
                 let unlocked = Math.floor(diffHours / 12) + 1;
                 if (unlocked < 1) unlocked = 1;
                 if (unlocked > 7) unlocked = 7;
-                
-                // التحقق من إكمال اليوم السابق
-                for (let i = 0; i < unlocked - 1; i++) {
-                    const tasks = dayTasks[i] || [];
-                    let allDone = true;
-                    tasks.forEach(task => {
-                        if (!completedTasks[task.id]) allDone = false;
-                    });
-                    if (!allDone) {
-                        unlocked = i + 1;
-                        break;
-                    }
-                }
-                
-                return Math.min(unlocked, 7);
+                return unlocked;
             }
 
             // ========== عرض الأيام ==========
@@ -262,7 +243,15 @@
                     if (isUnlocked) {
                         item.addEventListener('click', () => openDayDetail(index));
                     } else {
-                        const hoursLeft = 12 - (new Date() - new Date(user.weekStartDate || Date.now())) / (1000 * 60 * 60) % 12;
+                        const now = new Date();
+                        const weekStart = getUserData().weekStartDate ? new Date(getUserData().weekStartDate) : new Date();
+                        const startDay = weekStart.getDay();
+                        const saturdayOffset = (startDay + 1) % 7;
+                        const saturday = new Date(weekStart);
+                        saturday.setDate(weekStart.getDate() - saturdayOffset);
+                        const diffHours = (now - saturday) / (1000 * 60 * 60);
+                        const nextUnlockHour = Math.ceil((index * 12) - diffHours);
+                        const hoursLeft = Math.max(nextUnlockHour, 0);
                         item.addEventListener('click', () => {
                             alert(`🔒 هذا اليوم مقفل. سيتم فتحه بعد ${Math.ceil(hoursLeft)} ساعة تقريباً`);
                         });
@@ -291,6 +280,21 @@
                 document.getElementById('weekProgressFill').style.width = progress + '%';
             }
 
+            // ========== تحديث السيرفر ==========
+            async function updateServerTasks(userId, completedTasks) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ completedTasks: completedTasks })
+                    });
+                    if (!response.ok) throw new Error('فشل تحديث السيرفر');
+                    console.log('✅ تم تحديث السيرفر');
+                } catch (error) {
+                    console.warn('⚠️ فشل تحديث السيرفر:', error);
+                }
+            }
+
             // ========== فتح تفاصيل اليوم ==========
             function openDayDetail(index) {
                 const user = getUserData();
@@ -313,26 +317,33 @@
                         const checkDiv = document.createElement('div');
                         checkDiv.className = 'task-check' + (isDone ? ' done' : '');
                         checkDiv.textContent = isDone ? '✓' : '';
-                        checkDiv.addEventListener('click', function(e) {
+                        checkDiv.addEventListener('click', async function(e) {
                             e.stopPropagation();
+
+                            // 1. تحديث localStorage
                             const userData = getUserData();
                             if (!userData.completedTasks) userData.completedTasks = {};
                             userData.completedTasks[task.id] = !userData.completedTasks[task.id];
                             saveUserData(userData);
-                            
-                            // ✅ تحديث الواجهة
+
+                            // 2. تحديث السيرفر (باستخدام API)
+                            if (userData.id) {
+                                await updateServerTasks(userData.id, userData.completedTasks);
+                            }
+
+                            // 3. تحديث الواجهة
                             renderDays();
                             openDayDetail(index);
-                            
-                            // ✅ تحديث النقاط في Dashboard
+
+                            // 4. تحديث النقاط في Dashboard
                             if (window.updateStatsInUI) {
                                 window.updateStatsInUI(userData);
                             }
-                            // ✅ تحديث رحلة الشهر في Dashboard
+                            // 5. تحديث رحلة الشهر في Dashboard
                             if (window.updateWeeklyProgress) {
                                 window.updateWeeklyProgress(userData);
                             }
-                            // ✅ تحديث الأوائل
+                            // 6. تحديث الأوائل
                             if (window.loadLeaderboard) {
                                 window.loadLeaderboard();
                             }
