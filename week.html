@@ -147,17 +147,14 @@
 
     <script src="js/app.js"></script>
     <script>
-        // ==========================================
-        // صفحة الأسبوع (نسخة بسيطة)
-        // ==========================================
-
         (function() {
-            const weekDays = window.weekDays || ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+            const weekDays = window.weekDays || [
+                { name: 'السبت' }, { name: 'الأحد' }, { name: 'الإثنين' },
+                { name: 'الثلاثاء' }, { name: 'الأربعاء' }, { name: 'الخميس' }, { name: 'الجمعة' }
+            ];
+
             let dayTasks = window.dayTasks || {};
 
-            const API_BASE_URL = 'https://ruaya-backend-production.up.railway.app/api';
-
-            // ========== دوال مساعدة ==========
             function getUserData() {
                 try { return JSON.parse(localStorage.getItem('ruaya_user')) || {}; } catch (e) { return {}; }
             }
@@ -166,44 +163,37 @@
                 localStorage.setItem('ruaya_user', JSON.stringify(user));
             }
 
-            async function updateServerTasks(userId, completedTasks) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ completedTasks: completedTasks })
-                    });
-                    if (!response.ok) throw new Error('فشل تحديث السيرفر');
-                    console.log('✅ تم تحديث السيرفر');
-                } catch (error) {
-                    console.warn('⚠️ فشل تحديث السيرفر:', error);
-                }
+            // كل الأيام مفتوحة للتجربة
+            function calculateUnlockedDays() {
+                return 7; // كل الأيام مفتوحة
             }
 
-            // ========== عرض الأيام ==========
             function renderDays() {
                 const container = document.getElementById('daysPath');
                 if (!container) return;
 
                 const user = getUserData();
                 const completedTasks = user.completedTasks || {};
+                const unlockedCount = calculateUnlockedDays();
 
                 container.innerHTML = '';
 
-                weekDays.forEach((dayName, index) => {
+                weekDays.forEach((day, index) => {
+                    const isUnlocked = index < unlockedCount;
                     const tasks = dayTasks[index] || [];
                     let completedCount = 0;
                     tasks.forEach(task => {
                         if (completedTasks[task.id]) completedCount++;
                     });
                     const totalTasks = tasks.length;
-                    const isCompleted = completedCount === totalTasks && totalTasks > 0;
-                    const isActive = !isCompleted;
+                    const isCompleted = isUnlocked && completedCount === totalTasks && totalTasks > 0;
+                    const isActive = isUnlocked && !isCompleted;
 
                     const item = document.createElement('div');
                     item.className = 'day-item';
+                    if (!isUnlocked) item.classList.add('locked');
                     if (isCompleted) item.classList.add('completed');
-                    else item.classList.add('active');
+                    if (isActive) item.classList.add('active');
 
                     const numberDiv = document.createElement('div');
                     numberDiv.className = 'day-number';
@@ -212,21 +202,32 @@
                     const infoDiv = document.createElement('div');
                     infoDiv.className = 'day-info';
                     infoDiv.innerHTML = `
-                        <div class="day-name">${dayName}</div>
+                        <div class="day-name">${day.name}</div>
                         <div class="day-tasks-count">
-                            <span>${completedCount}</span> / ${totalTasks} مهام
+                            ${isUnlocked ? 
+                                `<span>${completedCount}</span> / ${totalTasks} مهام` : 
+                                '🔒 مقفل'
+                            }
                         </div>
                     `;
 
                     const statusDiv = document.createElement('div');
                     statusDiv.className = 'day-status';
-                    statusDiv.textContent = isCompleted ? '✅' : '⏳';
+                    if (isCompleted) statusDiv.textContent = '✅';
+                    else if (isActive) statusDiv.textContent = '⏳';
+                    else statusDiv.textContent = '🔒';
 
                     item.appendChild(numberDiv);
                     item.appendChild(infoDiv);
                     item.appendChild(statusDiv);
 
-                    item.addEventListener('click', () => openDayDetail(index));
+                    if (isUnlocked) {
+                        item.addEventListener('click', () => openDayDetail(index));
+                    } else {
+                        item.addEventListener('click', () => {
+                            alert('🔒 هذا اليوم مقفل');
+                        });
+                    }
 
                     container.appendChild(item);
                 });
@@ -250,73 +251,66 @@
                 document.getElementById('weekProgressFill').style.width = progress + '%';
             }
 
-            // ========== فتح تفاصيل اليوم ==========
             function openDayDetail(index) {
                 const user = getUserData();
                 const completedTasks = user.completedTasks || {};
-                const dayName = weekDays[index];
+                const day = weekDays[index];
                 const tasks = dayTasks[index] || [];
 
-                document.getElementById('detailDayTitle').textContent = dayName;
+                document.getElementById('detailDayTitle').textContent = day.name;
                 const container = document.getElementById('detailTasks');
                 container.innerHTML = '';
 
-                tasks.forEach(task => {
-                    const isDone = completedTasks[task.id] || false;
-                    const taskDiv = document.createElement('div');
-                    taskDiv.className = 'day-detail-task' + (isDone ? ' done-task' : '');
+                if (tasks.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد مهام لهذا اليوم</p>';
+                } else {
+                    tasks.forEach(task => {
+                        const isDone = completedTasks[task.id] || false;
+                        const taskDiv = document.createElement('div');
+                        taskDiv.className = 'day-detail-task' + (isDone ? ' done-task' : '');
 
-                    const checkDiv = document.createElement('div');
-                    checkDiv.className = 'task-check' + (isDone ? ' done' : '');
-                    checkDiv.textContent = isDone ? '✓' : '';
-                    checkDiv.addEventListener('click', async function(e) {
-                        e.stopPropagation();
+                        const checkDiv = document.createElement('div');
+                        checkDiv.className = 'task-check' + (isDone ? ' done' : '');
+                        checkDiv.textContent = isDone ? '✓' : '';
+                        checkDiv.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const userData = getUserData();
+                            if (!userData.completedTasks) userData.completedTasks = {};
+                            userData.completedTasks[task.id] = !userData.completedTasks[task.id];
+                            saveUserData(userData);
+                            
+                            renderDays();
+                            openDayDetail(index);
+                            
+                            if (window.updateStatsInUI) {
+                                window.updateStatsInUI(userData);
+                            }
+                            if (window.updateWeeklyProgress) {
+                                window.updateWeeklyProgress(userData);
+                            }
+                            if (window.loadLeaderboard) {
+                                window.loadLeaderboard();
+                            }
+                        });
 
-                        // 1. تحديث localStorage
-                        const userData = getUserData();
-                        if (!userData.completedTasks) userData.completedTasks = {};
-                        userData.completedTasks[task.id] = !userData.completedTasks[task.id];
-                        saveUserData(userData);
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'task-info';
+                        infoDiv.innerHTML = `
+                            <div class="task-title">${task.title}</div>
+                            <div class="task-desc">${task.desc}</div>
+                        `;
 
-                        // 2. تحديث السيرفر
-                        if (userData.id) {
-                            await updateServerTasks(userData.id, userData.completedTasks);
-                        }
+                        const timeDiv = document.createElement('div');
+                        timeDiv.className = 'task-time';
+                        timeDiv.textContent = task.time || '';
 
-                        // 3. تحديث الواجهة
-                        renderDays();
-                        openDayDetail(index);
+                        taskDiv.appendChild(checkDiv);
+                        taskDiv.appendChild(infoDiv);
+                        taskDiv.appendChild(timeDiv);
 
-                        // 4. تحديث النقاط في Dashboard
-                        if (window.calculatePoints) {
-                            const points = window.calculatePoints(userData.completedTasks || {});
-                            const scoreEl = document.getElementById('scoreValue');
-                            if (scoreEl) scoreEl.textContent = points;
-                        }
-
-                        // 5. تحديث الأوائل (لو الصفحة مفتوحة)
-                        if (window.loadLeaderboard) {
-                            window.loadLeaderboard();
-                        }
+                        container.appendChild(taskDiv);
                     });
-
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'task-info';
-                    infoDiv.innerHTML = `
-                        <div class="task-title">${task.title}</div>
-                        <div class="task-desc">${task.desc || ''}</div>
-                    `;
-
-                    const timeDiv = document.createElement('div');
-                    timeDiv.className = 'task-time';
-                    timeDiv.textContent = task.time || '';
-
-                    taskDiv.appendChild(checkDiv);
-                    taskDiv.appendChild(infoDiv);
-                    taskDiv.appendChild(timeDiv);
-
-                    container.appendChild(taskDiv);
-                });
+                }
 
                 document.getElementById('dayDetail').classList.add('show');
                 document.getElementById('dayDetail').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -326,26 +320,17 @@
                 document.getElementById('dayDetail').classList.remove('show');
             }
 
-            // ==========================================
-            // تحميل الصفحة
-            // ==========================================
             document.addEventListener('DOMContentLoaded', function() {
                 const user = getUserData();
                 if (user.name) {
                     document.getElementById('sidebarName').textContent = user.name;
-                    const pathNames = {
-                        'medicine': 'طب وعلوم حياة',
-                        'engineering': 'هندسة وعلوم حاسب',
-                        'arts': 'آداب وفنون',
-                        'business': 'إدارة أعمال'
-                    };
+                    const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
                     const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
                     document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
                     document.querySelector('.user-avatar').textContent = user.name.charAt(0);
                 }
 
                 if (Object.keys(dayTasks).length === 0) {
-                    // بيانات افتراضية
                     dayTasks = {
                         0: [{ id: 'sat_fajr', title: 'صلاة الفجر', desc: 'إلزامي', time: '٤:٣٠' }],
                         1: [{ id: 'sun_fajr', title: 'صلاة الفجر', desc: 'إلزامي', time: '٤:٣٠' }],
