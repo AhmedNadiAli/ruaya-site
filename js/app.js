@@ -33,11 +33,10 @@ function saveLocalUser(user) {
     localStorage.setItem('ruaya_user', JSON.stringify(user));
 }
 
-// ========== دالة getUser (الأولوية للسيرفر) ==========
+// ========== دالة getUser ==========
 async function getUser() {
     const localUser = getLocalUser();
     if (!localUser) return null;
-
     if (localUser.id) {
         try {
             const freshUser = await apiRequest(`/users/${localUser.id}`, 'GET');
@@ -49,32 +48,6 @@ async function getUser() {
         }
     }
     return localUser;
-}
-
-// ========== دوال حساب النقاط والتقدم ==========
-function calculateStats(completedTasks) {
-    // عدد المهام الكلي في الأسبوع (تقريباً 63)
-    const totalTasks = 63;
-    const completed = completedTasks ? Object.values(completedTasks).filter(v => v === true).length : 0;
-    const points = completed * 10;
-    const progress = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
-    const streak = completed;
-    return { completed, points, progress, streak, totalTasks };
-}
-
-function updateStatsInUI(user) {
-    const stats = calculateStats(user.completedTasks || {});
-    const progressEl = document.getElementById('progressValue');
-    const streakEl = document.getElementById('streakValue');
-    const streakTextEl = document.getElementById('streakText');
-    const scoreEl = document.getElementById('scoreValue');
-    const tasksEl = document.getElementById('tasksValue');
-
-    if (progressEl) progressEl.textContent = stats.progress + '%';
-    if (streakEl) streakEl.textContent = stats.streak;
-    if (streakTextEl) streakTextEl.textContent = stats.streak;
-    if (scoreEl) scoreEl.textContent = stats.points;
-    if (tasksEl) tasksEl.textContent = 9; // مهام اليوم (ثابتة مؤقتاً)
 }
 
 // ========== دوال Onboarding ==========
@@ -178,6 +151,161 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
     }
 };
 
+// ==========================================
+// ========== نظام المهام والأسبوع ==========
+// ==========================================
+
+// ========== بيانات الأيام والمهام ==========
+const weekDays = [
+    { name: 'السبت' },
+    { name: 'الأحد' },
+    { name: 'الإثنين' },
+    { name: 'الثلاثاء' },
+    { name: 'الأربعاء' },
+    { name: 'الخميس' },
+    { name: 'الجمعة' }
+];
+
+const dayTasks = {
+    0: [
+        { id: 'sat_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'sat_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'sat_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+        { id: 'sat_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+        { id: 'sat_study2', title: 'جلسة مذاكرة ٢ • كيمياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+        { id: 'sat_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'sat_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+        { id: 'sat_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'sat_study3', title: 'مذاكرة مسائية • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' }
+    ],
+    1: [
+        { id: 'sun_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'sun_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'sun_study1', title: 'جلسة مذاكرة ١ • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' },
+        { id: 'sun_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+        { id: 'sun_study2', title: 'جلسة مذاكرة ٢ • فيزياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+        { id: 'sun_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'sun_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+        { id: 'sun_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'sun_study3', title: 'مذاكرة مسائية • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+    ],
+    2: [
+        { id: 'mon_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'mon_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'mon_study1', title: 'جلسة مذاكرة ١ • عربي', desc: 'ساعة واحدة', time: '٨:٣٠' },
+        { id: 'mon_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+        { id: 'mon_study2', title: 'جلسة مذاكرة ٢ • إنجليزي', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+        { id: 'mon_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'mon_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+        { id: 'mon_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'mon_study3', title: 'مذاكرة مسائية • تاريخ', desc: 'ساعة واحدة', time: '٨:٣٠' }
+    ],
+    3: [
+        { id: 'tue_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'tue_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'tue_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+        { id: 'tue_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+        { id: 'tue_study2', title: 'جلسة مذاكرة ٢ • تاريخ', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+        { id: 'tue_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'tue_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+        { id: 'tue_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'tue_study3', title: 'مذاكرة مسائية • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+    ],
+    4: [
+        { id: 'wed_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'wed_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'wed_study1', title: 'جلسة مذاكرة ١ • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+        { id: 'wed_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+        { id: 'wed_study2', title: 'جلسة مذاكرة ٢ • رياضيات', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+        { id: 'wed_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'wed_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+        { id: 'wed_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'wed_study3', title: 'مذاكرة مسائية • فيزياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+    ],
+    5: [
+        { id: 'thu_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'thu_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'thu_study1', title: 'مراجعة شاملة', desc: 'ساعتان', time: '٨:٣٠' },
+        { id: 'thu_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '١٠:٣٠' },
+        { id: 'thu_study2', title: 'اختبار تجريبي', desc: 'ساعة واحدة', time: '١٠:٤٥' },
+        { id: 'thu_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'thu_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+        { id: 'thu_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'thu_study3', title: 'راحة', desc: 'استعداد للجمعة', time: '٨:٣٠' }
+    ],
+    6: [
+        { id: 'fri_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+        { id: 'fri_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+        { id: 'fri_rest', title: 'راحة / هوايات', desc: 'يوم الجمعة راحة', time: '١٠:٠٠' },
+        { id: 'fri_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+        { id: 'fri_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+        { id: 'fri_isha', title: 'عشاء + أذكار', desc: 'إلزامي', time: '٩:٢١' }
+    ]
+};
+
+// ========== دوال حساب النقاط والتقدم ==========
+function calculateStats(completedTasks) {
+    let totalTasks = 0;
+    let completed = 0;
+    for (let i = 0; i < 7; i++) {
+        const tasks = dayTasks[i] || [];
+        totalTasks += tasks.length;
+        tasks.forEach(task => {
+            if (completedTasks && completedTasks[task.id]) completed++;
+        });
+    }
+    const points = completed * 10;
+    const progress = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+    const streak = completed;
+    return { completed, points, progress, streak, totalTasks };
+}
+
+function getTodayTasks(completedTasks) {
+    const todayIndex = getCurrentDayIndex();
+    const tasks = dayTasks[todayIndex] || [];
+    let total = tasks.length;
+    let done = 0;
+    tasks.forEach(task => {
+        if (completedTasks && completedTasks[task.id]) done++;
+    });
+    return { total, done, remaining: total - done };
+}
+
+// ========== حساب اليوم الحالي (يبدأ من السبت) ==========
+function getCurrentDayIndex() {
+    const user = getLocalUser();
+    if (!user) return 0;
+    const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
+    // ضبط بداية الأسبوع على السبت
+    const startDay = weekStart.getDay(); // 0=الأحد, 6=السبت
+    const saturdayOffset = (startDay + 1) % 7;
+    const saturday = new Date(weekStart);
+    saturday.setDate(weekStart.getDate() - saturdayOffset);
+    
+    const now = new Date();
+    const diffDays = Math.floor((now - saturday) / (24 * 60 * 60 * 1000));
+    return Math.min(Math.max(diffDays, 0), 6);
+}
+
+// ========== دوال النقاط والتقدم في Dashboard ==========
+function updateStatsInUI(user) {
+    const completedTasks = user.completedTasks || {};
+    const stats = calculateStats(completedTasks);
+    const todayStats = getTodayTasks(completedTasks);
+
+    const progressEl = document.getElementById('progressValue');
+    const streakEl = document.getElementById('streakValue');
+    const streakTextEl = document.getElementById('streakText');
+    const scoreEl = document.getElementById('scoreValue');
+    const tasksEl = document.getElementById('tasksValue');
+
+    if (progressEl) progressEl.textContent = stats.progress + '%';
+    if (streakEl) streakEl.textContent = stats.streak;
+    if (streakTextEl) streakTextEl.textContent = stats.streak;
+    if (scoreEl) scoreEl.textContent = stats.points;
+    if (tasksEl) tasksEl.textContent = todayStats.remaining;
+}
+
 // ========== دوال Dashboard ==========
 async function loadDashboard() {
     try {
@@ -220,13 +348,15 @@ async function loadDashboard() {
 
 // ========== تحديث رحلة الشهر ==========
 function updateWeeklyProgress(user) {
-    const stats = calculateStats(user.completedTasks || {});
+    const completedTasks = user.completedTasks || {};
+    const stats = calculateStats(completedTasks);
     const progress = stats.progress;
 
     let currentWeek = 1;
     if (progress >= 75) currentWeek = 4;
     else if (progress >= 50) currentWeek = 3;
     else if (progress >= 25) currentWeek = 2;
+    else currentWeek = 1;
 
     const weekNodes = document.querySelectorAll('.path-node');
     weekNodes.forEach((node, index) => {
@@ -547,6 +677,10 @@ window.loginUser = loginUser;
 window.loadDashboard = loadDashboard;
 window.updateStatsInUI = updateStatsInUI;
 window.calculateStats = calculateStats;
+window.getCurrentDayIndex = getCurrentDayIndex;
+window.getTodayTasks = getTodayTasks;
+window.dayTasks = dayTasks;
+window.weekDays = weekDays;
 
 // ==========================================
 // ========== Dark Mode ==========
