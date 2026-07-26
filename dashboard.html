@@ -1,176 +1,220 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>رؤية | الرئيسية</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>رؤية | الرئيسية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="logo-area">
-            <img src="assets/logo.png" alt="رؤية" />
-            <div class="brand">رؤية</div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <img src="assets/logo.png" alt="رؤية" />
+      <div class="brand">رؤية</div>
+    </div>
+    <ul class="nav-menu">
+      <li class="nav-item"><a href="dashboard.html" class="nav-link active"><span class="icon">🏠</span> الرئيسية</a></li>
+      <li class="nav-item"><a href="plan.html" class="nav-link"><span class="icon">📅</span> المخطط الشهري</a></li>
+      <li class="nav-item"><a href="week.html" class="nav-link"><span class="icon">📋</span> الأسبوع</a></li>
+      <li class="nav-item"><a href="subjects.html" class="nav-link"><span class="icon">📚</span> المواد</a></li>
+      <li class="nav-item"><a href="exams.html" class="nav-link"><span class="icon">📝</span> الاختبارات</a></li>
+      <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
+      <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
+      <li class="nav-item">
+        <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
+          <span class="icon">🚪</span> تسجيل الخروج
+        </a>
+      </li>
+    </ul>
+    <div class="user-card">
+      <div class="user-avatar" id="sidebarAvatar">?</div>
+      <div class="user-info">
+        <h4 id="sidebarName">مستخدم</h4>
+        <span id="sidebarPath">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="top-bar">
+      <div class="greeting">
+        <h1>أهلاً <span id="userName">بك</span>! 👋</h1>
+        <p>يلا نكمل رحلتك النهارده • <span id="currentDate"></span></p>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" onclick="alert('📢 الإشعارات قريباً')">🔔</button>
+        <button class="icon-btn" id="darkModeToggle" onclick="window.toggleDarkMode && window.toggleDarkMode()">🌙</button>
+      </div>
+    </div>
+
+    <!-- Stats - كلها تبدأ من صفر -->
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value" id="progressValue">0%</div>
+            <div class="stat-label">إنجاز الشهر</div>
+          </div>
+          <div class="stat-icon">📈</div>
         </div>
-        <ul class="nav-menu">
-            <li class="nav-item"><a href="dashboard.html" class="nav-link active"><span class="icon">🏠</span> الرئيسية</a></li>
-            <li class="nav-item"><a href="plan.html" class="nav-link"><span class="icon">📅</span> المخطط الشهري</a></li>
-            <li class="nav-item"><a href="week.html" class="nav-link"><span class="icon">📋</span> الأسبوع</a></li>
-            <li class="nav-item"><a href="subjects.html" class="nav-link"><span class="icon">📚</span> المواد</a></li>
-            <li class="nav-item"><a href="exams.html" class="nav-link"><span class="icon">📝</span> الاختبارات</a></li>
-            <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
-            <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
-            <li class="nav-item">
-                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
-                    <span class="icon">🚪</span> تسجيل الخروج
-                </a>
-            </li>
-        </ul>
-        <div class="user-card">
-            <div class="user-avatar">أ</div>
-            <div class="user-info">
-                <h4>أحمد نادي</h4>
-                <span>مسار الطب • السنة التانية</span>
-            </div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value" id="streakValue">0</div>
+            <div class="stat-label">يوم متواصل 🔥</div>
+          </div>
+          <div class="stat-icon">🔥</div>
         </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main">
-        <div class="top-bar">
-            <div class="greeting">
-                <h1>أهلاً <span id="userName">أحمد</span>! 👋</h1>
-                <p>يلا نكمل رحلتك النهارده • <span id="currentDate"></span></p>
-            </div>
-            <div class="top-actions">
-                <button class="icon-btn" onclick="alert('📢 الإشعارات قريباً')">🔔 <span class="badge">3</span></button>
-                <button class="icon-btn" id="darkModeToggle" onclick="window.toggleDarkMode()">🌙</button>
-            </div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value" id="scoreValue">0</div>
+            <div class="stat-label">من أصل 600 درجة</div>
+          </div>
+          <div class="stat-icon">🎯</div>
         </div>
-
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card green">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="progressValue">0%</div>
-                        <div class="stat-label">إنجاز الشهر</div>
-                    </div>
-                    <div class="stat-icon">📈</div>
-                </div>
-            </div>
-            <div class="stat-card purple">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="streakValue">0</div>
-                        <div class="stat-label">يوم متواصل 🔥</div>
-                    </div>
-                    <div class="stat-icon">🔥</div>
-                </div>
-            </div>
-            <div class="stat-card orange">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="scoreValue">0</div>
-                        <div class="stat-label">من أصل 600 درجة</div>
-                    </div>
-                    <div class="stat-icon">🎯</div>
-                </div>
-            </div>
-            <div class="stat-card blue">
-                <div class="stat-header">
-                    <div>
-                        <div class="stat-value" id="tasksValue">0</div>
-                        <div class="stat-label">مهام متبقية النهاردة</div>
-                    </div>
-                    <div class="stat-icon">✅</div>
-                </div>
-            </div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value" id="tasksValue">0</div>
+            <div class="stat-label">مهام متبقية النهاردة</div>
+          </div>
+          <div class="stat-icon">✅</div>
         </div>
+      </div>
+    </div>
 
-        <!-- Content Grid -->
-        <div class="content-grid">
-            <!-- رحلة الشهر -->
-            <div class="card">
-                <div class="card-title">🚀 رحلتك هذا الشهر</div>
-                <div class="path-container">
-                    <div class="path-line"></div>
-                    <div class="path-nodes">
-                        <div class="path-node" onclick="window.location.href='week.html'">
-                            <div class="node-circle locked">1</div>
-                            <div class="node-info">
-                                <h4>الأسبوع الأول</h4>
-                                <span>مقفل • يبدأ قريباً</span>
-                            </div>
-                            <span class="node-badge" style="background:#f1f5f9;color:#94a3b8;">مقفل</span>
-                        </div>
-                        <div class="path-node" onclick="window.location.href='week.html'">
-                            <div class="node-circle locked">2</div>
-                            <div class="node-info">
-                                <h4>الأسبوع الثاني</h4>
-                                <span>مقفل • يبدأ قريباً</span>
-                            </div>
-                            <span class="node-badge" style="background:#f1f5f9;color:#94a3b8;">مقفل</span>
-                        </div>
-                        <div class="path-node" onclick="window.location.href='week.html'">
-                            <div class="node-circle current">3</div>
-                            <div class="node-info">
-                                <h4>الأسبوع الثالث</h4>
-                                <span>جاري الآن • 0%</span>
-                            </div>
-                            <span class="node-badge" style="background:#ede9fe;color:#6d28d9;">الحالي</span>
-                        </div>
-                        <div class="path-node" onclick="window.location.href='week.html'">
-                            <div class="node-circle locked">4</div>
-                            <div class="node-info">
-                                <h4>الأسبوع الرابع</h4>
-                                <span>مقفل • يبدأ قريباً</span>
-                            </div>
-                            <span class="node-badge" style="background:#f1f5f9;color:#94a3b8;">مقفل</span>
-                        </div>
-                        <div class="path-node" onclick="alert('🏆 نهاية الشهر: احصل على 100% لإكمال رحلتك!')">
-                            <div class="node-circle locked">🏆</div>
-                            <div class="node-info">
-                                <h4>نهاية الشهر</h4>
-                                <span>الجائزة الكبرى</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- مواقيت الصلاة -->
-            <div class="card">
-                <div class="card-title">🕌 مواقيت الصلاة</div>
-                <div style="padding: 10px 0;">
-                    <div class="prayer-mini">
-                        <div class="prayer-chip"><div class="p-name">فجر</div><div class="p-time">٤:٣٠</div></div>
-                        <div class="prayer-chip"><div class="p-name">ظهر</div><div class="p-time">١:٠١</div></div>
-                        <div class="prayer-chip"><div class="p-name">عصر</div><div class="p-time">٤:٣٨</div></div>
-                        <div class="prayer-chip"><div class="p-name">مغرب</div><div class="p-time">٧:٥٣</div></div>
-                        <div class="prayer-chip"><div class="p-name">عشاء</div><div class="p-time">٩:٢١</div></div>
-                    </div>
-                    <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-top:12px;">
-                        📍 مواقيت الصلاة حسب توقيت القاهرة
-                    </p>
-                </div>
-            </div>
+    <!-- Content Grid -->
+    <div class="content-grid">
+      <!-- رحلة الشهر - تبدأ من الأسبوع الأول -->
+      <div class="card">
+        <div class="card-title">🚀 رحلتك هذا الشهر</div>
+        <div class="path-container">
+          <div class="path-line"></div>
+          <div class="path-nodes" id="pathNodes">
+            <!-- هتتملأ من JavaScript حسب التقدم الحقيقي -->
+          </div>
         </div>
-    </main>
+      </div>
 
-    <img src="assets/leaf.png" class="deco-leaf" alt="" />
-    <script src="js/app.js"></script>
-    <script>
-        const now = new Date();
-        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-        document.getElementById('currentDate').textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      <!-- مواقيت الصلاة -->
+      <div class="card">
+        <div class="card-title">🕌 مواقيت الصلاة</div>
+        <div style="padding: 10px 0;">
+          <div class="prayer-mini">
+            <div class="prayer-chip"><div class="p-name">فجر</div><div class="p-time">٤:٣٠</div></div>
+            <div class="prayer-chip"><div class="p-name">ظهر</div><div class="p-time">١:٠١</div></div>
+            <div class="prayer-chip"><div class="p-name">عصر</div><div class="p-time">٤:٣٨</div></div>
+            <div class="prayer-chip"><div class="p-name">مغرب</div><div class="p-time">٧:٥٣</div></div>
+            <div class="prayer-chip"><div class="p-name">عشاء</div><div class="p-time">٩:٢١</div></div>
+          </div>
+          <p style="text-align:center;color:var(--text-muted);font-size:0.8rem;margin-top:12px;">
+            📍 مواقيت تقريبية حسب توقيت القاهرة
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
 
-        loadDashboard();
-    </script>
+  <img src="assets/leaf.png" class="deco-leaf" alt="" />
+  <script src="js/app.js"></script>
+  <script>
+    // تاريخ اليوم
+    const now = new Date();
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    document.getElementById('currentDate').textContent =
+      `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    // تحميل الداشبورد (من app.js)
+    if (typeof loadDashboard === 'function') {
+      loadDashboard();
+    } else {
+      // نسخة احتياطية لو app.js لسه مش متحمل
+      const user = JSON.parse(localStorage.getItem('ruaya_user') || '{}');
+      if (user.name) {
+        document.getElementById('userName').textContent = user.name.split(' ')[0];
+        document.getElementById('sidebarName').textContent = user.name;
+        document.getElementById('sidebarAvatar').textContent = user.name.charAt(0);
+      }
+      renderPathNodes(0); // يبدأ من الأسبوع 1
+    }
+
+    // رسم مسار الأسابيع حسب التقدم الحقيقي
+    function renderPathNodes(progressPercent) {
+      const container = document.getElementById('pathNodes');
+      if (!container) return;
+
+      // تحديد الأسبوع الحالي من نسبة الإنجاز
+      let currentWeek = 1;
+      if (progressPercent >= 75) currentWeek = 4;
+      else if (progressPercent >= 50) currentWeek = 3;
+      else if (progressPercent >= 25) currentWeek = 2;
+      else currentWeek = 1;
+
+      const weeks = [
+        { num: 1, title: 'الأسبوع الأول' },
+        { num: 2, title: 'الأسبوع الثاني' },
+        { num: 3, title: 'الأسبوع الثالث' },
+        { num: 4, title: 'الأسبوع الرابع' },
+        { num: 5, title: 'نهاية الشهر', isFinal: true }
+      ];
+
+      let html = '';
+      weeks.forEach((w, index) => {
+        const weekNum = index + 1;
+        let circleClass = 'locked';
+        let circleContent = w.isFinal ? '🏆' : w.num;
+        let badgeText = 'مقفل';
+        let badgeStyle = 'background:#f1f5f9;color:#94a3b8;';
+        let infoText = 'مقفل • يبدأ قريباً';
+
+        if (weekNum < currentWeek) {
+          circleClass = 'completed';
+          circleContent = '✓';
+          badgeText = 'مكتمل';
+          badgeStyle = 'background:#dcfce7;color:#16a34a;';
+          infoText = 'تم بنجاح • 100%';
+        } else if (weekNum === currentWeek && !w.isFinal) {
+          circleClass = 'current';
+          circleContent = w.num;
+          badgeText = 'الحالي';
+          badgeStyle = 'background:#ede9fe;color:#6d28d9;';
+          const weekProgress = Math.min(Math.max(progressPercent - ((currentWeek - 1) * 25), 0), 25);
+          infoText = `جاري الآن • ${Math.round(weekProgress)}%`;
+        } else if (w.isFinal && progressPercent >= 100) {
+          circleClass = 'completed';
+          circleContent = '🏆';
+          badgeText = 'مكتمل';
+          badgeStyle = 'background:#dcfce7;color:#16a34a;';
+          infoText = 'أحسنت! خلصت الشهر';
+        }
+
+        html += `
+          <div class="path-node" onclick="window.location.href='week.html'">
+            <div class="node-circle ${circleClass}">${circleContent}</div>
+            <div class="node-info">
+              <h4>${w.title}</h4>
+              <span>${infoText}</span>
+            </div>
+            <span class="node-badge" style="${badgeStyle}">${badgeText}</span>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // تصدير الدالة عشان app.js يقدر يستخدمها
+    window.renderPathNodes = renderPathNodes;
+  </script>
 </body>
 </html>
