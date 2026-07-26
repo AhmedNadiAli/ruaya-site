@@ -265,11 +265,17 @@
             if (nameInput === null || nameInput.trim() === '') {
                 alert('الاسم مطلوب للمتابعة');
                 return;
-}
-formData.name = nameInput.trim();
+            }
+            formData.name = nameInput.trim();
 
-            // حفظ البيانات
-            saveOnboardingData(formData);
+            // ✅ حفظ البيانات (مع تجاهل الأخطاء)
+            try {
+                saveOnboardingData(formData);
+            } catch (e) {
+                console.error('❌ خطأ:', e);
+                // حتى لو حصل خطأ، نحاول نروح للـ Dashboard
+                window.location.href = 'dashboard.html';
+            }
         };
 
         showStep(1);

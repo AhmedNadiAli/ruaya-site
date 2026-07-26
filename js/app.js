@@ -50,10 +50,10 @@ async function getUser() {
     return localUser;
 }
 
-// ========== دوال Onboarding (مبسطة - من غير سيرفر) ==========
+// ========== دوال Onboarding (نسخة آمنة) ==========
 async function saveOnboardingData(formData) {
     try {
-        // جلب المستخدم من localStorage
+        // 1. جلب المستخدم من localStorage
         let user = getLocalUser();
         if (!user) {
             alert('يرجى تسجيل الدخول أولاً');
@@ -61,20 +61,20 @@ async function saveOnboardingData(formData) {
             return;
         }
 
-        // تحديث بيانات المستخدم محلياً
+        // 2. تحديث بيانات المستخدم محلياً
         user.name = formData.name || user.name || 'أحمد نادي';
         user.path = formData.path;
         user.year = formData.year;
-        user.specialization = formData.specialization;
+        user.specialization = formData.specialization || '';
         user.weakSubjects = formData.weakSubjects || [];
         user.preferredTime = formData.preferredTime;
         user.goalScore = formData.goalScore || 500;
         user.onboardingDone = true;
         
-        // حفظ في localStorage
+        // 3. حفظ في localStorage
         saveLocalUser(user);
 
-        // محاولة تحديث السيرفر (لو فيه id)
+        // 4. محاولة تحديث السيرفر (لو فيه id)
         if (user.id) {
             try {
                 await apiRequest(`/users/${user.id}`, 'PUT', {
@@ -91,14 +91,17 @@ async function saveOnboardingData(formData) {
             } catch (e) {
                 console.warn('⚠️ فشل حفظ على السيرفر، البيانات محفوظة محلياً');
             }
+        } else {
+            console.warn('⚠️ مفيش id للمستخدم، البيانات محفوظة محلياً بس');
         }
 
-        // التحويل للـ Dashboard
+        // 5. التحويل للـ Dashboard (دائماً)
         window.location.href = 'dashboard.html';
         
     } catch (error) {
         console.error('❌ خطأ في حفظ التهيئة:', error);
-        alert('حدث خطأ، حاول مرة أخرى');
+        // حتى لو حصل خطأ، نحاول نروح للـ Dashboard
+        window.location.href = 'dashboard.html';
     }
 }
 
