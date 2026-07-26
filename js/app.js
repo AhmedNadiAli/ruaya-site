@@ -376,11 +376,7 @@ async function loadDashboard() {
         updateSidebarUser(user);
 
         const stats = calculateStats(user.completedTasks || {});
-        if (typeof window.renderPathNodes === 'function') {
-            window.renderPathNodes(stats.progress);
-        } else {
-            updateWeeklyProgress(user);
-        }
+        renderPathNodes(stats.progress);
 
         setInterval(async () => {
             try {
@@ -388,11 +384,7 @@ async function loadDashboard() {
                 if (freshUser) {
                     updateStatsInUI(freshUser);
                     const freshStats = calculateStats(freshUser.completedTasks || {});
-                    if (typeof window.renderPathNodes === 'function') {
-                        window.renderPathNodes(freshStats.progress);
-                    } else {
-                        updateWeeklyProgress(freshUser);
-                    }
+                    renderPathNodes(freshStats.progress);
                 }
             } catch (e) {}
         }, 10000);
