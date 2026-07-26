@@ -118,10 +118,8 @@
                 document.querySelectorAll('#pathOptions .option-btn').forEach(b => b.classList.remove('selected'));
                 this.classList.add('selected');
                 formData.path = this.dataset.value;
-                // إعادة تعيين التخصص عند تغيير المسار
                 formData.specialization = '';
                 updateSpecOptions(formData.path);
-                // إلغاء تحديد أي تخصص قديم
                 document.querySelectorAll('.spec-btn').forEach(b => b.classList.remove('selected'));
             });
         });
@@ -256,11 +254,21 @@
         window.prevStep = function(current) { showStep(current - 1); };
 
         window.finishOnboarding = function() {
+            // التحقق من وقت المذاكرة
             if (!formData.preferredTime) {
                 alert('اختار وقت المذاكرة المفضل');
                 return;
             }
-            formData.name = prompt('ادخل اسمك الثلاثي:', 'أحمد نادي') || 'أحمد نادي';
+
+            // ✅ طلب الاسم بطريقة آمنة
+            const nameInput = prompt('ادخل اسمك الثلاثي:', 'أحمد نادي');
+            if (nameInput === null || nameInput.trim() === '') {
+                alert('الاسم مطلوب للمتابعة');
+                return;
+}
+formData.name = nameInput.trim();
+
+            // حفظ البيانات
             saveOnboardingData(formData);
         };
 

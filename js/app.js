@@ -50,41 +50,52 @@ async function getUser() {
     return localUser;
 }
 
-// ========== دوال Onboarding ==========
+// ========== دوال Onboarding (مبسطة - من غير سيرفر) ==========
 async function saveOnboardingData(formData) {
     try {
-        const localUser = getLocalUser();
-        if (!localUser) {
+        // جلب المستخدم من localStorage
+        let user = getLocalUser();
+        if (!user) {
             alert('يرجى تسجيل الدخول أولاً');
             window.location.href = 'login.html';
             return;
         }
 
-        const updatedUser = {
-            name: formData.name || localUser.name,
-            path: formData.path,
-            year: formData.year,
-            specialization: formData.specialization,
-            weakSubjects: formData.weakSubjects || [],
-            preferredTime: formData.preferredTime,
-            goalScore: formData.goalScore || 500,
-            onboardingDone: true
-        };
+        // تحديث بيانات المستخدم محلياً
+        user.name = formData.name || user.name || 'أحمد نادي';
+        user.path = formData.path;
+        user.year = formData.year;
+        user.specialization = formData.specialization;
+        user.weakSubjects = formData.weakSubjects || [];
+        user.preferredTime = formData.preferredTime;
+        user.goalScore = formData.goalScore || 500;
+        user.onboardingDone = true;
+        
+        // حفظ في localStorage
+        saveLocalUser(user);
 
-        if (localUser.id) {
+        // محاولة تحديث السيرفر (لو فيه id)
+        if (user.id) {
             try {
-                await apiRequest(`/users/${localUser.id}`, 'PUT', updatedUser);
-                const freshUser = await apiRequest(`/users/${localUser.id}`, 'GET');
-                saveLocalUser(freshUser);
+                await apiRequest(`/users/${user.id}`, 'PUT', {
+                    name: user.name,
+                    path: user.path,
+                    year: user.year,
+                    specialization: user.specialization,
+                    weakSubjects: user.weakSubjects,
+                    preferredTime: user.preferredTime,
+                    goalScore: user.goalScore,
+                    onboardingDone: true
+                });
+                console.log('✅ تم حفظ التهيئة على السيرفر');
             } catch (e) {
-                console.warn('⚠️ فشل حفظ على السيرفر، نستخدم localStorage');
-                saveLocalUser({ ...localUser, ...updatedUser });
+                console.warn('⚠️ فشل حفظ على السيرفر، البيانات محفوظة محلياً');
             }
-        } else {
-            saveLocalUser({ ...localUser, ...updatedUser });
         }
 
+        // التحويل للـ Dashboard
         window.location.href = 'dashboard.html';
+        
     } catch (error) {
         console.error('❌ خطأ في حفظ التهيئة:', error);
         alert('حدث خطأ، حاول مرة أخرى');
@@ -404,24 +415,19 @@ async function saveProfile() {
     }
 }
 
-// ==========================================
 // ========== الأوائل (Leaderboard) ==========
-// ==========================================
-
 async function loadLeaderboard() {
     const container = document.getElementById('leaderboardList');
     if (!container) return;
     container.innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
 
     try {
-        // ✅ استخدام الرابط الصحيح من API_BASE_URL
         const url = `${API_BASE_URL}/users`;
         const response = await fetch(url);
         if (!response.ok) throw new Error('فشل في جلب البيانات');
         let users = await response.json();
 
         if (!users || users.length === 0) {
-            // لو مفيش مستخدمين، نحاول نضيف المستخدم المحلي (إن وجد)
             const localUser = getLocalUser();
             if (localUser) {
                 users = [localUser];
@@ -431,7 +437,6 @@ async function loadLeaderboard() {
             }
         }
 
-        // حساب النقاط والتقدم
         users.forEach(user => {
             const stats = calculateStats(user.completedTasks || {});
             user._points = stats.points;
@@ -440,7 +445,6 @@ async function loadLeaderboard() {
             user._badgesCount = user.badges ? Object.values(user.badges).filter(v => v === true).length : 0;
         });
 
-        // الترتيب حسب النقاط (تنازلياً)
         users.sort((a, b) => (b._points || 0) - (a._points || 0));
 
         let html = '';
@@ -604,7 +608,7 @@ window.getCurrentDayIndex = getCurrentDayIndex;
 window.getTodayTasks = getTodayTasks;
 
 // ==========================================
-// ========== Dark Mode (عام) ==========
+// ========== Dark Mode ==========
 // ==========================================
 
 function applyDarkMode() {
@@ -662,4 +666,3 @@ function getUserSubjects(user) {
 window.getUserSubjects = getUserSubjects;
 
 console.log('🚀 رؤية شغالة (السيرفر هو الأساسي، localStorage احتياطي)');
-console.log('✅ الأوائل محسوبة باستخدام نظام المهام الجديد');
