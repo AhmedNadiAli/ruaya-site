@@ -127,16 +127,23 @@
 
             try {
                 const result = await window.loginUser(email, password);
-                if (result.user) {
-                    // حفظ بيانات المستخدم في localStorage
+                if (result && result.user) {
+                    // ✅ حفظ بيانات المستخدم في localStorage
                     localStorage.setItem('ruaya_user', JSON.stringify(result.user));
-                    if (result.user.onboardingDone) {
+
+                    // ✅ التحويل حسب حالة التهيئة (مع تحويل القيمة لـ Boolean)
+                    const onboardingDone = result.user.onboardingDone === 1 || result.user.onboardingDone === true;
+                    
+                    if (onboardingDone) {
                         window.location.href = 'dashboard.html';
                     } else {
                         window.location.href = 'onboarding.html';
                     }
+                } else {
+                    throw new Error('بيانات غير صحيحة');
                 }
             } catch (error) {
+                console.error('❌ خطأ في تسجيل الدخول:', error);
                 messageEl.textContent = error.message || '❌ خطأ في تسجيل الدخول';
                 messageEl.className = 'error';
                 btn.disabled = false;

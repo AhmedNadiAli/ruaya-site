@@ -52,10 +52,9 @@ async function getUser() {
     return localUser;
 }
 
-// ========== دوال Onboarding (نسخة آمنة) ==========
+// ========== دوال Onboarding ==========
 async function saveOnboardingData(formData) {
     try {
-        // 1. جلب المستخدم من localStorage
         let user = getLocalUser();
         if (!user) {
             alert('يرجى تسجيل الدخول أولاً');
@@ -63,7 +62,6 @@ async function saveOnboardingData(formData) {
             return;
         }
 
-        // 2. تحديث بيانات المستخدم محلياً
         user.name = formData.name || user.name || 'أحمد نادي';
         user.path = formData.path;
         user.year = formData.year;
@@ -73,10 +71,8 @@ async function saveOnboardingData(formData) {
         user.goalScore = formData.goalScore || 500;
         user.onboardingDone = true;
         
-        // 3. حفظ في localStorage
         saveLocalUser(user);
 
-        // 4. محاولة تحديث السيرفر (لو فيه id)
         if (user.id) {
             try {
                 await apiRequest(`/users/${user.id}`, 'PUT', {
@@ -93,19 +89,71 @@ async function saveOnboardingData(formData) {
             } catch (e) {
                 console.warn('⚠️ فشل حفظ على السيرفر، البيانات محفوظة محلياً');
             }
-        } else {
-            console.warn('⚠️ مفيش id للمستخدم، البيانات محفوظة محلياً بس');
         }
 
-        // 5. التحويل للـ Dashboard (دائماً)
         window.location.href = 'dashboard.html';
-        
     } catch (error) {
         console.error('❌ خطأ في حفظ التهيئة:', error);
-        // حتى لو حصل خطأ، نحاول نروح للـ Dashboard
         window.location.href = 'dashboard.html';
     }
 }
+
+// ========== دوال تسجيل الدخول ==========
+window.loginUser = async function(email, password) {
+    try {
+        const result = await apiRequest('/users/login', 'POST', { email, password });
+        if (result && result.user) {
+            // ✅ التأكد من قيمة onboardingDone (السيرفر بيرجعها كـ 0 أو 1)
+            const userData = {
+                ...result.user,
+                onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
+            };
+            saveLocalUser(userData);
+            return { user: userData };
+        }
+        throw new Error('بيانات غير صحيحة');
+    } catch (error) {
+        console.error('❌ خطأ في تسجيل الدخول:', error);
+        throw error;
+    }
+};
+
+// ========== دوال التسجيل ==========
+window.registerUser = async function(name, email, password, path = 'medicine', year = '2') {
+    try {
+        const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year });
+        if (result && result.id) {
+            // بناء كائن المستخدم يدوياً (لأن السيرفر بيرجع id فقط)
+            const userData = {
+                id: result.id,
+                name: name,
+                email: email,
+                path: path,
+                year: year,
+                specialization: '',
+                weakSubjects: [],
+                preferredTime: 'morning',
+                goalScore: 500,
+                onboardingDone: false,
+                points: 0,
+                streak: 0,
+                progress: 0,
+                completedTasks: {},
+                badges: {},
+                weeklyProgress: {},
+                lastPathChange: null,
+                avatarUrl: '',
+                createdAt: new Date().toISOString()
+            };
+            saveLocalUser(userData);
+            return { user: userData };
+        }
+        throw new Error('فشل التسجيل');
+    } catch (error) {
+        console.error('❌ خطأ في التسجيل:', error);
+        throw error;
+    }
+};
 
 // ========== مهام كل يوم ==========
 const weekDays = [
@@ -561,34 +609,7 @@ function getSpecializationOptions(path) {
     return map[path] || [];
 }
 
-// ========== دوال تسجيل الدخول والتسجيل ==========
-window.registerUser = async function(name, email, password, path = 'medicine', year = '2') {
-    try {
-        const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year });
-        if (result.user) {
-            saveLocalUser(result.user);
-        }
-        return result;
-    } catch (error) {
-        console.error('❌ خطأ في التسجيل:', error);
-        throw error;
-    }
-};
-
-window.loginUser = async function(email, password) {
-    try {
-        const result = await apiRequest('/users/login', 'POST', { email, password });
-        if (result.user) {
-            saveLocalUser(result.user);
-        }
-        return result;
-    } catch (error) {
-        console.error('❌ خطأ في تسجيل الدخول:', error);
-        throw error;
-    }
-};
-
-// ========== تشغيل الصفحات ==========
+// ========== دوال تشغيل الصفحات ==========
 document.addEventListener('DOMContentLoaded', function() {
     const path = window.location.pathname.split('/').pop();
     if (path === 'dashboard.html' || path === '') loadDashboard();
