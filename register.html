@@ -210,17 +210,48 @@
             }
 
             try {
+                // محاولة التسجيل في السيرفر
                 const result = await window.registerUser(fullName, schoolEmail, password, 'medicine', '2');
-                if (result.id) {
-                    // حفظ بيانات المستخدم في localStorage
-                    localStorage.setItem('ruaya_user', JSON.stringify(result.user));
+                
+                if (result && result.id) {
+                    // ✅ بناء كائن المستخدم يدوياً (لأن السيرفر بيرجع id بس)
+                    const userData = {
+                        id: result.id,
+                        name: fullName,
+                        email: schoolEmail,
+                        path: 'medicine',
+                        year: '2',
+                        specialization: '',
+                        weakSubjects: [],
+                        preferredTime: 'morning',
+                        goalScore: 500,
+                        onboardingDone: false,
+                        points: 0,
+                        streak: 0,
+                        progress: 0,
+                        completedTasks: {},
+                        badges: {},
+                        weeklyProgress: {},
+                        lastPathChange: null,
+                        avatarUrl: '',
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // حفظ في localStorage
+                    localStorage.setItem('ruaya_user', JSON.stringify(userData));
+
                     messageEl.textContent = '✅ تم التسجيل بنجاح! جارٍ التحويل...';
                     messageEl.className = 'success';
+                    
                     setTimeout(() => {
                         window.location.href = 'onboarding.html';
                     }, 1500);
+                } else {
+                    throw new Error('لم يتم استلام ID من السيرفر');
                 }
+
             } catch (error) {
+                console.error('❌ خطأ في التسجيل:', error);
                 messageEl.textContent = error.message || '❌ حدث خطأ في التسجيل';
                 messageEl.className = 'error';
                 btn.disabled = false;
