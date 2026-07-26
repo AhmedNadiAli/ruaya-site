@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>رؤية | الأسبوع</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .week-page { max-width: 900px; margin: 0 auto; }
+        .week-header { text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: var(--radius); color: white; }
+        .week-header h1 { font-size: 1.8rem; font-weight: 800; }
+        .week-header p { opacity: 0.9; margin-top: 4px; }
+
+        .days-path { display: flex; flex-direction: column; gap: 12px; padding: 20px 0; position: relative; }
+        .days-path::before { content: ''; position: absolute; top: 60px; right: 35px; width: 4px; height: calc(100% - 120px); background: var(--border); border-radius: 4px; z-index: 0; }
+
+        .day-item { display: flex; align-items: center; gap: 20px; padding: 16px 20px; background: var(--card); border-radius: var(--radius); border: 2px solid var(--border); cursor: pointer; transition: all 0.3s ease; position: relative; z-index: 1; box-shadow: var(--shadow); }
+        .day-item:hover { transform: translateX(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .day-item.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }
+        .day-item.locked:hover { transform: none; box-shadow: var(--shadow); }
+        .day-item.active { border-color: var(--primary); background: var(--primary-soft); }
+        .day-item.completed { border-color: var(--success); background: #f0fdf4; }
+
+        .day-number { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; flex-shrink: 0; background: var(--bg); border: 3px solid var(--border); color: var(--text-muted); transition: all 0.3s ease; }
+        .day-item.active .day-number { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 0 0 8px rgba(34,197,94,0.2); animation: pulse 2s infinite; }
+        .day-item.completed .day-number { background: var(--success); border-color: var(--success); color: white; }
+        .day-item.locked .day-number { background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; }
+
+        .day-info { flex: 1; }
+        .day-info .day-name { font-weight: 700; font-size: 1.05rem; }
+        .day-info .day-date { font-size: 0.8rem; color: var(--text-muted); }
+        .day-info .day-tasks-count { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .day-info .day-tasks-count span { color: var(--primary); font-weight: 700; }
+
+        .day-status { font-size: 1.8rem; }
+        .day-item.completed .day-status { color: var(--success); }
+        .day-item.active .day-status { color: var(--primary); }
+        .day-item.locked .day-status { color: #94a3b8; }
+
+        .day-detail { display: none; background: var(--card); border-radius: var(--radius); padding: 24px; margin-top: 24px; border: 2px solid var(--primary); box-shadow: 0 8px 30px rgba(34,197,94,0.15); animation: fadeInUp 0.4s ease; }
+        .day-detail.show { display: block; }
+        .day-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .day-detail-header h2 { font-size: 1.2rem; font-weight: 800; }
+        .day-detail-header .close-detail { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: all 0.3s; }
+        .day-detail-header .close-detail:hover { color: var(--danger); transform: rotate(90deg); }
+
+        .day-detail-tasks { display: flex; flex-direction: column; gap: 10px; }
+        .day-detail-task { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--bg); border-radius: 12px; border: 1px solid var(--border); transition: all 0.3s; }
+        .day-detail-task:hover { border-color: var(--primary); }
+        .day-detail-task .task-check { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 0.85rem; flex-shrink: 0; }
+        .day-detail-task .task-check.done { background: var(--primary); border-color: var(--primary); color: white; }
+        .day-detail-task .task-info { flex: 1; }
+        .day-detail-task .task-info .task-title { font-weight: 600; font-size: 0.95rem; }
+        .day-detail-task .task-info .task-desc { font-size: 0.75rem; color: var(--text-muted); }
+        .day-detail-task .task-time { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); background: var(--bg); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); }
+        .day-detail-task.done-task { opacity: 0.6; text-decoration: line-through; }
+
+        .week-progress { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; border: 1px solid var(--border); }
+        .week-progress .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .week-progress .progress-header span { font-weight: 700; font-size: 0.9rem; }
+        .week-progress .progress-bar { width: 100%; height: 10px; background: var(--bg); border-radius: 10px; overflow: hidden; }
+        .week-progress .progress-bar .progress-fill { height: 100%; background: linear-gradient(135deg, var(--primary), #4ade80); border-radius: 10px; transition: width 0.6s ease; width: 0%; }
+
+        body.dark-mode .week-progress { background: var(--card); border-color: var(--border); }
+        body.dark-mode .week-header { background: linear-gradient(135deg, #065f46, #047857); }
+        body.dark-mode .day-item { background: var(--card); border-color: var(--border); }
+        body.dark-mode .day-item.active { border-color: var(--primary); background: #1a2e1a; }
+        body.dark-mode .day-item.completed { border-color: var(--success); background: #0f2a1a; }
+        body.dark-mode .day-detail { background: var(--card); }
+        body.dark-mode .day-detail-task { background: #1e293b; color: var(--text); }
+        body.dark-mode .day-detail-task .task-check { background: #1e293b; border-color: var(--border); }
+        body.dark-mode .day-detail-task .task-check.done { background: var(--primary); border-color: var(--primary); }
+        body.dark-mode .day-detail-task .task-time { background: #0f172a; border-color: var(--border); color: var(--text); }
+        body.dark-mode .day-info .day-date { color: var(--text-muted); }
+        body.dark-mode .day-info .day-tasks-count { color: var(--text-muted); }
+
+        @media (max-width: 600px) {
+            .day-item { padding: 12px 14px; gap: 12px; }
+            .day-number { width: 44px; height: 44px; font-size: 1.1rem; }
+            .day-info .day-name { font-size: 0.9rem; }
+            .day-status { font-size: 1.3rem; }
+            .day-detail { padding: 16px; }
+            .day-detail-task { flex-wrap: wrap; gap: 8px; }
+            .day-detail-task .task-time { font-size: 0.65rem; }
+            .days-path::before { right: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo-area"><img src="assets/logo.png" alt="رؤية" /><div class="brand">رؤية</div></div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="icon">🏠</span> الرئيسية</a></li>
+            <li class="nav-item"><a href="plan.html" class="nav-link"><span class="icon">📅</span> المخطط الشهري</a></li>
+            <li class="nav-item"><a href="week.html" class="nav-link active"><span class="icon">📋</span> الأسبوع</a></li>
+            <li class="nav-item"><a href="subjects.html" class="nav-link"><span class="icon">📚</span> المواد</a></li>
+            <li class="nav-item"><a href="exams.html" class="nav-link"><span class="icon">📝</span> الاختبارات</a></li>
+            <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
+            <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
+            <li class="nav-item">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
+                    <span class="icon">🚪</span> تسجيل الخروج
+                </a>
+            </li>
+        </ul>
+        <div class="user-card">
+            <div class="user-avatar">أ</div>
+            <div class="user-info"><h4 id="sidebarName">أحمد نادي</h4><span id="sidebarPath">مسار الطب • السنة التانية</span></div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="top-bar">
+            <div class="greeting">
+                <h1>📋 رحلة هذا الأسبوع</h1>
+                <p>أنجز مهام كل يوم لتتقدم في رحلتك</p>
+            </div>
+            <div class="top-actions">
+                <button class="icon-btn" onclick="alert('📢 الإشعارات قريباً')">🔔 <span class="badge">3</span></button>
+                <button class="icon-btn" id="darkModeToggle" onclick="window.toggleDarkMode()">🌙</button>
+            </div>
+        </div>
+
+        <div class="week-page">
+            <div class="week-progress">
+                <div class="progress-header">
+                    <span>تقدم الأسبوع</span>
+                    <span id="weekProgressText">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="weekProgressFill"></div>
+                </div>
+            </div>
+
+            <div class="days-path" id="daysPath"></div>
+
+            <div class="day-detail" id="dayDetail">
+                <div class="day-detail-header">
+                    <h2 id="detailDayTitle">اليوم الأول</h2>
+                    <button class="close-detail" onclick="closeDayDetail()">✕</button>
+                </div>
+                <div class="day-detail-tasks" id="detailTasks"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        // صفحة الأسبوع (مستقلة ولكنها تستخدم الدارك مود العام)
+        (function() {
+            const weekDays = [
+                { name: 'السبت', icon: '📅' },
+                { name: 'الأحد', icon: '📅' },
+                { name: 'الإثنين', icon: '📅' },
+                { name: 'الثلاثاء', icon: '📅' },
+                { name: 'الأربعاء', icon: '📅' },
+                { name: 'الخميس', icon: '📅' },
+                { name: 'الجمعة', icon: '🌟' }
+            ];
+
+            const dayTasks = {
+                0: [
+                    { id: 'sat_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'sat_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'sat_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                    { id: 'sat_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                    { id: 'sat_study2', title: 'جلسة مذاكرة ٢ • كيمياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                    { id: 'sat_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'sat_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                    { id: 'sat_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'sat_study3', title: 'مذاكرة مسائية • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' }
+                ],
+                1: [
+                    { id: 'sun_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'sun_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'sun_study1', title: 'جلسة مذاكرة ١ • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                    { id: 'sun_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                    { id: 'sun_study2', title: 'جلسة مذاكرة ٢ • فيزياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                    { id: 'sun_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'sun_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                    { id: 'sun_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'sun_study3', title: 'مذاكرة مسائية • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+                ],
+                2: [
+                    { id: 'mon_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'mon_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'mon_study1', title: 'جلسة مذاكرة ١ • عربي', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                    { id: 'mon_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                    { id: 'mon_study2', title: 'جلسة مذاكرة ٢ • إنجليزي', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                    { id: 'mon_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'mon_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                    { id: 'mon_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'mon_study3', title: 'مذاكرة مسائية • تاريخ', desc: 'ساعة واحدة', time: '٨:٣٠' }
+                ],
+                3: [
+                    { id: 'tue_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'tue_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'tue_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                    { id: 'tue_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                    { id: 'tue_study2', title: 'جلسة مذاكرة ٢ • تاريخ', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                    { id: 'tue_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'tue_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                    { id: 'tue_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'tue_study3', title: 'مذاكرة مسائية • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+                ],
+                4: [
+                    { id: 'wed_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'wed_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'wed_study1', title: 'جلسة مذاكرة ١ • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                    { id: 'wed_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                    { id: 'wed_study2', title: 'جلسة مذاكرة ٢ • رياضيات', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                    { id: 'wed_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'wed_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                    { id: 'wed_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'wed_study3', title: 'مذاكرة مسائية • فيزياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+                ],
+                5: [
+                    { id: 'thu_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'thu_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'thu_study1', title: 'مراجعة شاملة', desc: 'ساعتان', time: '٨:٣٠' },
+                    { id: 'thu_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '١٠:٣٠' },
+                    { id: 'thu_study2', title: 'اختبار تجريبي', desc: 'ساعة واحدة', time: '١٠:٤٥' },
+                    { id: 'thu_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'thu_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                    { id: 'thu_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'thu_study3', title: 'راحة', desc: 'استعداد للجمعة', time: '٨:٣٠' }
+                ],
+                6: [
+                    { id: 'fri_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'fri_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'fri_rest', title: 'راحة / هوايات', desc: 'يوم الجمعة راحة', time: '١٠:٠٠' },
+                    { id: 'fri_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                    { id: 'fri_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                    { id: 'fri_isha', title: 'عشاء + أذكار', desc: 'إلزامي', time: '٩:٢١' }
+                ]
+            };
+
+            function getUserData() {
+                try { return JSON.parse(localStorage.getItem('ruaya_user')) || {}; } catch (e) { return {}; }
+            }
+
+            function saveUserData(user) { localStorage.setItem('ruaya_user', JSON.stringify(user)); }
+
+            function getDayTasksCount(index) { return dayTasks[index] ? dayTasks[index].length : 0; }
+
+            function getDayCompletedCount(index, completedTasks) {
+                const tasks = dayTasks[index] || [];
+                let count = 0;
+                tasks.forEach(task => { if (completedTasks && completedTasks[task.id]) count++; });
+                return count;
+            }
+
+            function checkDayCompleted(index, completedTasks) {
+                const tasks = dayTasks[index] || [];
+                if (tasks.length === 0) return false;
+                let allDone = true;
+                tasks.forEach(task => { if (!completedTasks || !completedTasks[task.id]) allDone = false; });
+                return allDone;
+            }
+
+            function calculateUnlockedDays() {
+                const user = getUserData();
+                const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
+                const now = new Date();
+                const diffDays = Math.floor((now - weekStart) / (24 * 60 * 60 * 1000));
+                let unlocked = Math.min(diffDays + 1, 7);
+                if (unlocked < 1) unlocked = 1;
+                return unlocked;
+            }
+
+            window.renderDays = function() {
+                const container = document.getElementById('daysPath');
+                if (!container) return;
+
+                const user = getUserData();
+                const completedTasks = user.completedTasks || {};
+                const unlockedCount = calculateUnlockedDays();
+
+                container.innerHTML = '';
+
+                weekDays.forEach((day, index) => {
+                    const isUnlocked = index < unlockedCount;
+                    const isCompleted = isUnlocked && checkDayCompleted(index, completedTasks);
+                    const isActive = isUnlocked && !isCompleted;
+
+                    const item = document.createElement('div');
+                    item.className = 'day-item';
+                    if (!isUnlocked) item.classList.add('locked');
+                    if (isCompleted) item.classList.add('completed');
+                    if (isActive) item.classList.add('active');
+
+                    const numberDiv = document.createElement('div');
+                    numberDiv.className = 'day-number';
+                    numberDiv.textContent = index + 1;
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'day-info';
+                    const completedCount = getDayCompletedCount(index, completedTasks);
+                    const totalTasks = getDayTasksCount(index);
+                    infoDiv.innerHTML = `
+                        <div class="day-name">${day.icon} ${day.name}</div>
+                        <div class="day-tasks-count">
+                            ${isUnlocked ? `<span>${completedCount}</span> / ${totalTasks} مهام` : '🔒 مقفل'}
+                        </div>
+                    `;
+
+                    const statusDiv = document.createElement('div');
+                    statusDiv.className = 'day-status';
+                    if (isCompleted) statusDiv.textContent = '✅';
+                    else if (isActive) statusDiv.textContent = '⏳';
+                    else statusDiv.textContent = '🔒';
+
+                    item.appendChild(numberDiv);
+                    item.appendChild(infoDiv);
+                    item.appendChild(statusDiv);
+
+                    if (isUnlocked) {
+                        item.addEventListener('click', () => openDayDetail(index));
+                    } else {
+                        item.addEventListener('click', () => {
+                            alert('🔒 هذا اليوم مقفل. أنجز مهام الأيام السابقة لفتحه');
+                        });
+                    }
+
+                    container.appendChild(item);
+                });
+
+                updateProgress();
+            };
+
+            function updateProgress() {
+                const user = getUserData();
+                const completedTasks = user.completedTasks || {};
+                let totalTasks = 0, completedCount = 0;
+                weekDays.forEach((_, index) => {
+                    const tasks = dayTasks[index] || [];
+                    totalTasks += tasks.length;
+                    tasks.forEach(task => { if (completedTasks[task.id]) completedCount++; });
+                });
+                const progress = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+                document.getElementById('weekProgressText').textContent = progress + '%';
+                document.getElementById('weekProgressFill').style.width = progress + '%';
+            }
+
+            window.openDayDetail = function(index) {
+                const user = getUserData();
+                const completedTasks = user.completedTasks || {};
+                const day = weekDays[index];
+                const tasks = dayTasks[index] || [];
+
+                document.getElementById('detailDayTitle').textContent = `${day.icon} ${day.name}`;
+                const container = document.getElementById('detailTasks');
+                container.innerHTML = '';
+
+                if (tasks.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد مهام لهذا اليوم</p>';
+                } else {
+                    tasks.forEach(task => {
+                        const isDone = completedTasks[task.id] || false;
+                        const taskDiv = document.createElement('div');
+                        taskDiv.className = 'day-detail-task' + (isDone ? ' done-task' : '');
+
+                        const checkDiv = document.createElement('div');
+                        checkDiv.className = 'task-check' + (isDone ? ' done' : '');
+                        checkDiv.textContent = isDone ? '✓' : '';
+                        checkDiv.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const userData = getUserData();
+                            if (!userData.completedTasks) userData.completedTasks = {};
+                            userData.completedTasks[task.id] = !userData.completedTasks[task.id];
+                            saveUserData(userData);
+                            window.renderDays();
+                            window.openDayDetail(index);
+                            if (window.updateStatsInUI) { window.updateStatsInUI(userData); }
+                        });
+
+                        const infoDiv = document.createElement('div');
+                        infoDiv.className = 'task-info';
+                        infoDiv.innerHTML = `<div class="task-title">${task.title}</div><div class="task-desc">${task.desc}</div>`;
+
+                        const timeDiv = document.createElement('div');
+                        timeDiv.className = 'task-time';
+                        timeDiv.textContent = task.time;
+
+                        taskDiv.appendChild(checkDiv);
+                        taskDiv.appendChild(infoDiv);
+                        taskDiv.appendChild(timeDiv);
+
+                        container.appendChild(taskDiv);
+                    });
+                }
+
+                document.getElementById('dayDetail').classList.add('show');
+                document.getElementById('dayDetail').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+
+            window.closeDayDetail = function() {
+                document.getElementById('dayDetail').classList.remove('show');
+            };
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const user = getUserData();
+                if (user.name) {
+                    document.getElementById('sidebarName').textContent = user.name;
+                    const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
+                    const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
+                    document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
+                    document.querySelector('.user-avatar').textContent = user.name.charAt(0);
+                }
+
+                if (!user.weekStartDate) {
+                    user.weekStartDate = new Date().toISOString();
+                    saveUserData(user);
+                }
+
+                window.renderDays();
+            });
+        })();
+    </script>
+</body>
+</html>

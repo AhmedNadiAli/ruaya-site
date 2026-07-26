@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>رؤية | المخطط الشهري</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .plan-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+        }
+        .day-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--border);
+            min-height: 180px;
+            transition: all 0.25s;
+        }
+        .day-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-2px);
+        }
+        .day-card.friday {
+            background: linear-gradient(135deg, #fef3c7, #fef9c3);
+            border-color: #fde68a;
+        }
+        .day-card h4 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+        .day-card.friday h4 {
+            color: #92400e;
+        }
+        .day-task {
+            font-size: 0.78rem;
+            padding: 4px 8px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+        }
+        .day-task.prayer-task {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        body.dark-mode .day-card {
+            background: var(--card);
+            border-color: var(--border);
+        }
+        body.dark-mode .day-card.friday {
+            background: #1a2e1a;
+            border-color: #334155;
+        }
+        body.dark-mode .day-card.friday h4 {
+            color: #fde68a;
+        }
+        body.dark-mode .day-task {
+            background: #1e293b;
+            color: var(--text);
+        }
+        body.dark-mode .day-task.prayer-task {
+            background: #1a2e1a;
+            color: #86efac;
+        }
+
+        @media (max-width: 1100px) {
+            .plan-days { grid-template-columns: repeat(4, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .plan-days { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-area"><img src="assets/logo.png" alt="رؤية" /><div class="brand">رؤية</div></div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="icon">🏠</span> الرئيسية</a></li>
+            <li class="nav-item"><a href="plan.html" class="nav-link active"><span class="icon">📅</span> المخطط الشهري</a></li>
+            <li class="nav-item"><a href="week.html" class="nav-link"><span class="icon">📋</span> الأسبوع</a></li>
+            <li class="nav-item"><a href="subjects.html" class="nav-link"><span class="icon">📚</span> المواد</a></li>
+            <li class="nav-item"><a href="exams.html" class="nav-link"><span class="icon">📝</span> الاختبارات</a></li>
+            <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
+            <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
+            <li class="nav-item">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
+                    <span class="icon">🚪</span> تسجيل الخروج
+                </a>
+            </li>
+        </ul>
+        <div class="user-card">
+            <div class="user-avatar">أ</div>
+            <div class="user-info"><h4 id="sidebarName">أحمد نادي</h4><span id="sidebarPath">مسار الطب • السنة التانية</span></div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="top-bar">
+            <div class="greeting">
+                <h1>📅 المخطط الشهري</h1>
+                <p style="color:var(--text-muted);">يوليو 2026 • قابل للتعديل</p>
+            </div>
+            <div class="top-actions">
+                <button class="icon-btn" onclick="alert('📢 الإشعارات قريباً')">🔔 <span class="badge">3</span></button>
+                <button class="icon-btn" id="darkModeToggle" onclick="window.toggleDarkMode()">🌙</button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-title">📌 ملاحظات مهمة</div>
+            <ul style="padding-right:20px;color:var(--text-muted);line-height:1.9;font-size:0.95rem;">
+                <li>الصلوات والأذكار وروتين الصباح <strong>إلزامية</strong> وثابتة</li>
+                <li>يوم <strong>الجمعة</strong> يوم راحة كامل (مفيش مذاكرة إلزامية)</li>
+                <li>تقدر تعدل مواعيد جلسات المذاكرة والمواد حسب احتياجك</li>
+                <li>الموقع هيحسب تقدمك تلقائيًا لما تعلم على المهام</li>
+            </ul>
+        </div>
+
+        <div class="plan-days" id="planDays"></div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        (function applyDark() {
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            document.body.classList.toggle('dark-mode', isDark);
+            const btn = document.getElementById('darkModeToggle');
+            if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+        })();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('planDays');
+            if (!container) return;
+
+            const user = JSON.parse(localStorage.getItem('ruaya_user')) || {};
+
+            if (user.name) {
+                document.getElementById('sidebarName').textContent = user.name;
+                const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
+                const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
+                document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
+                document.querySelector('.user-avatar').textContent = user.name.charAt(0);
+            }
+
+            function getSubjects() {
+                const year = user.year || '2';
+                const path = user.path || 'medicine';
+                const specialization = user.specialization || '';
+
+                const core = ['عربي', 'إنجليزي', 'تاريخ وطني'];
+                if (year === '2') {
+                    return specialization ? [...core, specialization] : core;
+                } else {
+                    const map = {
+                        'medicine': ['أحياء', 'كيمياء'],
+                        'engineering': ['رياضيات', 'فيزياء'],
+                        'arts': ['جغرافيا', 'إحصاء'],
+                        'business': ['اقتصاد', 'رياضيات']
+                    };
+                    return map[path] || core;
+                }
+            }
+
+            const subjects = getSubjects();
+            const weekDays = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+            container.innerHTML = '';
+
+            for (let i = 0; i < weekDays.length; i++) {
+                const day = weekDays[i];
+                const index = i;
+                const card = document.createElement('div');
+                card.className = 'day-card' + (index === 6 ? ' friday' : '');
+
+                let html = `<h4>${day}</h4>`;
+                const tasks = ['فجر + أذكار', 'روتين الصباح'];
+
+                if (index === 6) {
+                    tasks.push('راحة / هوايات');
+                } else {
+                    if (subjects.length > 0) {
+                        const s1 = subjects[index % subjects.length];
+                        const s2 = subjects[(index + 1) % subjects.length];
+                        tasks.push(`مذاكرة ${s1}`, `مذاكرة ${s2}`);
+                    } else {
+                        tasks.push('مذاكرة عامة');
+                    }
+                }
+
+                if (index === 6) {
+                    tasks.push('ظهر', 'مغرب', 'عشاء + أذكار');
+                } else {
+                    tasks.push('ظهر', 'تمارين', 'مغرب', 'مذاكرة مسائية');
+                }
+
+                tasks.forEach(t => {
+                    const isPrayer = t.includes('فجر') || t.includes('ظهر') || t.includes('مغرب') || t.includes('عشاء') || t.includes('أذكار');
+                    html += `<div class="day-task${isPrayer ? ' prayer-task' : ''}">${t}</div>`;
+                });
+
+                card.innerHTML = html;
+                container.appendChild(card);
+            }
+        });
+    </script>
+</body>
+</html>

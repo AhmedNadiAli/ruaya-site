@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>رؤية | تفاصيل الأسبوع</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== تنسيقات صفحة الأسبوع ===== */
+        .week-page {
+            min-height: 100vh;
+            background: var(--bg);
+            padding: 30px 20px;
+        }
+
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            padding: 0 10px;
+        }
+
+        .week-header h1 {
+            font-size: 1.8rem;
+            font-weight: 900;
+        }
+
+        .week-header .back-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text);
+        }
+
+        .week-header .back-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ===== Grid الأيام ===== */
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* ===== بطاقة اليوم ===== */
+        .day-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 20px 18px;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--border);
+            transition: all 0.35s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        }
+
+        .day-card.locked {
+            opacity: 0.5;
+            filter: grayscale(0.6);
+            cursor: not-allowed;
+        }
+
+        .day-card.locked:hover {
+            transform: none;
+            box-shadow: var(--shadow);
+        }
+
+        .day-card.completed {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary-soft), var(--card));
+        }
+
+        .day-card.current {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2); }
+            50% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.1); }
+        }
+
+        .day-card .day-number {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .day-card .day-name {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .day-card .day-status {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .day-card .day-status .icon {
+            font-size: 1.1rem;
+        }
+
+        .day-card .day-progress {
+            margin-top: 12px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .day-card .day-progress .fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.6s ease;
+            width: 0%;
+        }
+
+        .day-card .day-tasks-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* ===== شارة القفل ===== */
+        .lock-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 1.2rem;
+        }
+
+        .check-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 1.4rem;
+            color: var(--primary);
+        }
+
+        /* ===== Modal (تفاصيل اليوم) ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(6px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-content {
+            background: var(--card);
+            border-radius: 28px;
+            padding: 30px 28px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-content .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-content .modal-header h2 {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .modal-content .modal-header .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .modal-content .modal-header .close-btn:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        /* ===== مهام اليوم في المودال ===== */
+        .modal-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-task-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--bg);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .modal-task-item:hover {
+            border-color: var(--primary);
+        }
+
+        .modal-task-item .task-check {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .modal-task-item .task-check:hover {
+            border-color: var(--primary);
+        }
+
+        .modal-task-item .task-check.done {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .modal-task-item .task-info {
+            flex: 1;
+        }
+
+        .modal-task-item .task-info .task-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .modal-task-item .task-info .task-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .modal-task-item .task-time {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: var(--card);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 600px) {
+            .days-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            .day-card {
+                padding: 16px 14px;
+            }
+            .day-card .day-name {
+                font-size: 1rem;
+            }
+            .modal-content {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .days-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== Dark Mode ===== */
+        body.dark-mode .modal-content {
+            background: var(--card);
+        }
+        body.dark-mode .modal-task-item {
+            background: #1e293b;
+        }
+        body.dark-mode .modal-task-item .task-check {
+            background: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <div class="week-page">
+        <!-- Header -->
+        <div class="week-header">
+            <a href="dashboard.html" class="back-btn">← العودة</a>
+            <h1>📅 الأسبوع الأول</h1>
+            <div style="width:80px;"></div> <!-- فراغ للتوازن -->
+        </div>
+
+        <!-- Grid الأيام -->
+        <div class="days-grid" id="daysGrid">
+            <!-- هتتgenerate من الـ JS -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="dayModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalDayName">السبت</h2>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div id="modalTasksContainer" class="modal-tasks">
+                <!-- هتتgenerate من الـ JS -->
+            </div>
+            <div style="margin-top:16px;text-align:center;font-size:0.85rem;color:var(--text-muted);" id="modalProgressText">
+                التقدم: 0%
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // بيانات الأسبوع (6 أيام من السبت للخميس)
+        // ==========================================
+        const weekData = [
+            {
+                id: 0,
+                name: 'السبت',
+                tasks: [
+                    { id: 'sat_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'sat_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'sat_study1', title: 'جلسة مذاكرة ١', desc: 'أحياء • ساعة', time: '٨:٣٠' },
+                    { id: 'sat_study2', title: 'جلسة مذاكرة ٢', desc: 'كيمياء • ساعة', time: '١٠:٠٠' },
+                    { id: 'sat_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                ]
+            },
+            {
+                id: 1,
+                name: 'الأحد',
+                tasks: [
+                    { id: 'sun_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'sun_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'sun_study1', title: 'جلسة مذاكرة ١', desc: 'رياضيات • ساعة', time: '٨:٣٠' },
+                    { id: 'sun_study2', title: 'جلسة مذاكرة ٢', desc: 'فيزياء • ساعة', time: '١٠:٠٠' },
+                    { id: 'sun_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                ]
+            },
+            {
+                id: 2,
+                name: 'الإثنين',
+                tasks: [
+                    { id: 'mon_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'mon_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'mon_study1', title: 'جلسة مذاكرة ١', desc: 'عربي • ساعة', time: '٨:٣٠' },
+                    { id: 'mon_study2', title: 'جلسة مذاكرة ٢', desc: 'إنجليزي • ساعة', time: '١٠:٠٠' },
+                    { id: 'mon_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                ]
+            },
+            {
+                id: 3,
+                name: 'الثلاثاء',
+                tasks: [
+                    { id: 'tue_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'tue_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'tue_study1', title: 'جلسة مذاكرة ١', desc: 'تاريخ • ساعة', time: '٨:٣٠' },
+                    { id: 'tue_study2', title: 'جلسة مذاكرة ٢', desc: 'جغرافيا • ساعة', time: '١٠:٠٠' },
+                    { id: 'tue_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                ]
+            },
+            {
+                id: 4,
+                name: 'الأربعاء',
+                tasks: [
+                    { id: 'wed_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'wed_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'wed_study1', title: 'جلسة مذاكرة ١', desc: 'كيمياء • ساعة', time: '٨:٣٠' },
+                    { id: 'wed_study2', title: 'جلسة مذاكرة ٢', desc: 'أحياء • ساعة', time: '١٠:٠٠' },
+                    { id: 'wed_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                ]
+            },
+            {
+                id: 5,
+                name: 'الخميس',
+                tasks: [
+                    { id: 'thu_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                    { id: 'thu_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                    { id: 'thu_review', title: 'مراجعة شاملة', desc: 'كل المواد • ساعتين', time: '٨:٣٠' },
+                    { id: 'thu_exam', title: 'اختبار تجريبي', desc: 'بابل شيت', time: '١١:٠٠' },
+                    { id: 'thu_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                ]
+            }
+        ];
+
+        // ==========================================
+        // التخزين
+        // ==========================================
+        function getWeekProgress() {
+            const data = localStorage.getItem('week_progress');
+            if (data) return JSON.parse(data);
+            // افتراضي: اليوم الأول مفتوح، الباقي مقفل
+            return { 0: 'open' };
+        }
+
+        function saveWeekProgress(progress) {
+            localStorage.setItem('week_progress', JSON.stringify(progress));
+        }
+
+        function getDayTasksStatus(dayId) {
+            const key = `day_tasks_${dayId}`;
+            const data = localStorage.getItem(key);
+            if (data) return JSON.parse(data);
+            return {};
+        }
+
+        function saveDayTasksStatus(dayId, status) {
+            const key = `day_tasks_${dayId}`;
+            localStorage.setItem(key, JSON.stringify(status));
+        }
+
+        // ==========================================
+        // فتح اليوم (يتم فتح اليوم التالي تلقائياً)
+        // ==========================================
+        function checkAndOpenNextDay() {
+            const progress = getWeekProgress();
+            let allDone = true;
+
+            // التحقق من كل الأيام المفتوحة
+            for (let i = 0; i < weekData.length; i++) {
+                if (progress[i] === 'open' || progress[i] === 'completed') {
+                    const tasks = getDayTasksStatus(i);
+                    const totalTasks = weekData[i].tasks.length;
+                    const doneTasks = Object.values(tasks).filter(v => v === true).length;
+                    if (doneTasks < totalTasks) {
+                        allDone = false;
+                        break;
+                    }
+                    // تحديث الحالة إلى completed
+                    if (progress[i] !== 'completed') {
+                        progress[i] = 'completed';
+                    }
+                }
+            }
+
+            // فتح اليوم التالي لو كل الأيام المفتوحة مكتملة
+            for (let i = 0; i < weekData.length - 1; i++) {
+                if (progress[i] === 'completed' && !progress[i+1]) {
+                    progress[i+1] = 'open';
+                    break;
+                }
+            }
+
+            saveWeekProgress(progress);
+            renderDays();
+        }
+
+        // ==========================================
+        // عرض الأيام
+        // ==========================================
+        function renderDays() {
+            const grid = document.getElementById('daysGrid');
+            const progress = getWeekProgress();
+            grid.innerHTML = '';
+
+            weekData.forEach((day, index) => {
+                const status = progress[index] || 'locked'; // locked, open, completed
+                const tasks = getDayTasksStatus(index);
+                const totalTasks = day.tasks.length;
+                const doneTasks = Object.values(tasks).filter(v => v === true).length;
+                const percent = Math.round((doneTasks / totalTasks) * 100);
+
+                const card = document.createElement('div');
+                card.className = `day-card ${status}`;
+                if (status === 'locked') {
+                    card.innerHTML = `
+                        <div class="lock-badge">🔒</div>
+                        <div class="day-number">اليوم ${index+1}</div>
+                        <div class="day-name">${day.name}</div>
+                        <div class="day-status"><span class="icon">🔒</span> مقفل</div>
+                        <div class="day-progress"><div class="fill" style="width:0%;"></div></div>
+                        <div class="day-tasks-count">0/${totalTasks} مهام</div>
+                    `;
+                } else if (status === 'completed') {
+                    card.innerHTML = `
+                        <div class="check-badge">✅</div>
+                        <div class="day-number">اليوم ${index+1}</div>
+                        <div class="day-name">${day.name}</div>
+                        <div class="day-status"><span class="icon">✅</span> مكتمل</div>
+                        <div class="day-progress"><div class="fill" style="width:100%;"></div></div>
+                        <div class="day-tasks-count">${totalTasks}/${totalTasks} مهام</div>
+                    `;
+                    card.onclick = () => openDayModal(index);
+                } else { // open
+                    card.innerHTML = `
+                        <div class="day-number">اليوم ${index+1}</div>
+                        <div class="day-name">${day.name}</div>
+                        <div class="day-status"><span class="icon">📖</span> جاري</div>
+                        <div class="day-progress"><div class="fill" style="width:${percent}%;"></div></div>
+                        <div class="day-tasks-count">${doneTasks}/${totalTasks} مهام</div>
+                    `;
+                    card.onclick = () => openDayModal(index);
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        // ==========================================
+        // المودال
+        // ==========================================
+        let currentModalDay = null;
+
+        function openDayModal(dayId) {
+            const progress = getWeekProgress();
+            if (progress[dayId] === 'locked') {
+                alert('🔒 هذا اليوم مقفل، أنهِ اليوم السابق أولاً');
+                return;
+            }
+
+            currentModalDay = dayId;
+            const day = weekData[dayId];
+            const tasksStatus = getDayTasksStatus(dayId);
+
+            document.getElementById('modalDayName').textContent = day.name;
+
+            const container = document.getElementById('modalTasksContainer');
+            container.innerHTML = '';
+
+            day.tasks.forEach(task => {
+                const isDone = tasksStatus[task.id] || false;
+                const item = document.createElement('div');
+                item.className = 'modal-task-item';
+
+                const checkBtn = document.createElement('div');
+                checkBtn.className = `task-check ${isDone ? 'done' : ''}`;
+                checkBtn.textContent = isDone ? '✓' : '';
+                checkBtn.onclick = function() {
+                    const currentStatus = getDayTasksStatus(dayId);
+                    currentStatus[task.id] = !currentStatus[task.id];
+                    saveDayTasksStatus(dayId, currentStatus);
+                    // تحديث المودال
+                    openDayModal(dayId);
+                    // تحديث البطاقات
+                    renderDays();
+                    // التحقق من فتح اليوم التالي
+                    checkAndOpenNextDay();
+                    // تحديث الـ Dashboard
+                    updateDashboardStats();
+                };
+
+                const info = document.createElement('div');
+                info.className = 'task-info';
+                info.innerHTML = `
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-desc">${task.desc}</div>
+                `;
+
+                const time = document.createElement('span');
+                time.className = 'task-time';
+                time.textContent = task.time;
+
+                item.appendChild(checkBtn);
+                item.appendChild(info);
+                item.appendChild(time);
+                container.appendChild(item);
+            });
+
+            // تحديث نسبة التقدم في المودال
+            const total = day.tasks.length;
+            const done = Object.values(getDayTasksStatus(dayId)).filter(v => v === true).length;
+            document.getElementById('modalProgressText').textContent = `التقدم: ${Math.round((done/total)*100)}% (${done}/${total} مهام)`;
+
+            document.getElementById('dayModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('dayModal').classList.remove('active');
+        }
+
+        // إغلاق المودال بالضغط خارج المحتوى
+        document.getElementById('dayModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ==========================================
+        // تحديث Dashboard (إحصائيات الأسبوع)
+        // ==========================================
+        function updateDashboardStats() {
+            // هنحاول نجيب الـ Dashboard من localStorage ونحدثه
+            const user = JSON.parse(localStorage.getItem('ruaya_user'));
+            if (user) {
+                // حساب التقدم الكلي للأسبوع
+                let totalTasks = 0;
+                let doneTasks = 0;
+                weekData.forEach((day, index) => {
+                    const tasks = getDayTasksStatus(index);
+                    totalTasks += day.tasks.length;
+                    doneTasks += Object.values(tasks).filter(v => v === true).length;
+                });
+                const progress = Math.round((doneTasks / totalTasks) * 100);
+                // تحديث في localStorage
+                user.weeklyProgress = { week1: progress };
+                localStorage.setItem('ruaya_user', JSON.stringify(user));
+            }
+        }
+
+        // ==========================================
+        // تشغيل الصفحة
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            renderDays();
+            // فتح اليوم الأول تلقائياً لو مفيش أيام مفتوحة
+            const progress = getWeekProgress();
+            if (!progress[0]) {
+                progress[0] = 'open';
+                saveWeekProgress(progress);
+                renderDays();
+            }
+            // التحقق من الأيام المفتوحة
+            checkAndOpenNextDay();
+
+            // تطبيق الوضع المظلم
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+
+        // ==========================================
+        // تصدير الدوال للاستخدام في الـ HTML
+        // ==========================================
+        window.closeModal = closeModal;
+    </script>
+</body>
+</html>

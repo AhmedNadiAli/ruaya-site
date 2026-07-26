@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>رؤية | الأوائل</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-area"><img src="assets/logo.png" alt="رؤية" /><div class="brand">رؤية</div></div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="dashboard.html" class="nav-link"><span class="icon">🏠</span> الرئيسية</a></li>
+            <li class="nav-item"><a href="plan.html" class="nav-link"><span class="icon">📅</span> المخطط الشهري</a></li>
+            <li class="nav-item"><a href="week.html" class="nav-link"><span class="icon">📋</span> الأسبوع</a></li>
+            <li class="nav-item"><a href="subjects.html" class="nav-link"><span class="icon">📚</span> المواد</a></li>
+            <li class="nav-item"><a href="exams.html" class="nav-link"><span class="icon">📝</span> الاختبارات</a></li>
+            <li class="nav-item"><a href="leaderboard.html" class="nav-link active"><span class="icon">🏆</span> الأوائل</a></li>
+            <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
+            <li class="nav-item">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
+                    <span class="icon">🚪</span> تسجيل الخروج
+                </a>
+            </li>
+        </ul>
+        <div class="user-card">
+            <div class="user-avatar">أ</div>
+            <div class="user-info"><h4 id="sidebarName">أحمد نادي</h4><span id="sidebarPath">مسار الطب • السنة التانية</span></div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="top-bar">
+            <div class="greeting">
+                <h1>🏆 الأوائل</h1>
+                <p>أعلى المستخدمين في النقاط والتقدم</p>
+            </div>
+            <div class="top-actions">
+                <button class="icon-btn" onclick="alert('📢 الإشعارات قريباً')">🔔 <span class="badge">3</span></button>
+                <button class="icon-btn" id="darkModeToggle" onclick="window.toggleDarkMode()">🌙</button>
+            </div>
+        </div>
+
+        <div class="leaderboard-filters">
+            <button class="filter-btn active" data-filter="points" onclick="window.loadLeaderboard()">⭐ حسب النقاط</button>
+            <button class="filter-btn" data-filter="streak" onclick="window.loadLeaderboard()">🔥 حسب التوالي</button>
+            <button class="filter-btn" data-filter="progress" onclick="window.loadLeaderboard()">📈 حسب التقدم</button>
+        </div>
+
+        <div class="leaderboard-list" id="leaderboardList">
+            <div class="loading">⏳ جاري التحميل...</div>
+        </div>
+    </main>
+
+    <img src="assets/leaf.png" class="deco-leaf" alt="" />
+    <script src="js/app.js"></script>
+    <script>
+        // ==========================================
+        // تحميل الصفحة
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحديث Sidebar
+            const user = JSON.parse(localStorage.getItem('ruaya_user')) || {};
+            if (user.name) {
+                document.getElementById('sidebarName').textContent = user.name;
+                const pathNames = {
+                    'medicine': 'طب وعلوم حياة',
+                    'engineering': 'هندسة وعلوم حاسب',
+                    'arts': 'آداب وفنون',
+                    'business': 'إدارة أعمال'
+                };
+                const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
+                document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
+                document.querySelector('.user-avatar').textContent = user.name.charAt(0);
+            }
+
+            // تحميل الأوائل (يستخدم الدالة من app.js)
+            window.loadLeaderboard();
+        });
+    </script>
+</body>
+</html>

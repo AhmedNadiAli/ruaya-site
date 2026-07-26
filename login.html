@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>رؤية | تسجيل الدخول</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 40%, #f5f3ff 100%);
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            animation: fadeInUp 0.6s ease;
+        }
+        .login-card .form-group { margin-bottom: 18px; }
+        .login-card .form-group label { display: block; font-weight: 700; margin-bottom: 6px; font-size: 0.95rem; }
+        .login-card .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 1rem;
+            background: #f8fafc;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .login-card .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+        }
+        .login-card .login-logo { text-align: center; margin-bottom: 28px; }
+        .login-card .login-logo img { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 12px; }
+        .login-card .login-logo h1 { font-size: 2rem; font-weight: 800; color: var(--primary-dark); }
+        .login-card .login-logo p { color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #4ade80);
+            color: white;
+            box-shadow: 0 4px 14px rgba(34,197,94,0.35);
+            border: none;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34,197,94,0.4);
+        }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .login-card .register-link { margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+        .login-card .register-link a { color: var(--primary); font-weight: 700; text-decoration: none; }
+        .login-card .register-link a:hover { text-decoration: underline; }
+        #loginMessage { margin-top: 16px; text-align: center; font-weight: 600; font-size: 0.95rem; min-height: 28px; }
+        #loginMessage.error { color: var(--danger); }
+        #loginMessage.success { color: var(--success); }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="assets/logo.png" alt="رؤية">
+                <h1>رؤية</h1>
+                <p>تسجيل الدخول</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>📧 الإيميل المؤسسي</label>
+                    <input type="email" id="loginEmail" placeholder="your@moe.edu.eg" required>
+                </div>
+
+                <div class="form-group">
+                    <label>🔑 كلمة السر</label>
+                    <input type="password" id="loginPassword" placeholder="********" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="loginBtn">🔓 تسجيل الدخول</button>
+
+                <div id="loginMessage"></div>
+
+                <div class="register-link">
+                    ليس لديك حساب؟ <a href="register.html">إنشاء حساب جديد</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        window.handleLogin = async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const messageEl = document.getElementById('loginMessage');
+            const btn = document.getElementById('loginBtn');
+
+            messageEl.textContent = '';
+            messageEl.className = '';
+            btn.disabled = true;
+            btn.textContent = '⏳ جاري...';
+
+            try {
+                const result = await window.loginUser(email, password);
+                if (result.user) {
+                    // حفظ بيانات المستخدم في localStorage
+                    localStorage.setItem('ruaya_user', JSON.stringify(result.user));
+                    if (result.user.onboardingDone) {
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        window.location.href = 'onboarding.html';
+                    }
+                }
+            } catch (error) {
+                messageEl.textContent = error.message || '❌ خطأ في تسجيل الدخول';
+                messageEl.className = 'error';
+                btn.disabled = false;
+                btn.textContent = '🔓 تسجيل الدخول';
+            }
+        };
+    </script>
+</body>
+</html>
