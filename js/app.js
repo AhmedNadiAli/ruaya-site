@@ -34,12 +34,17 @@ function saveLocalUser(user) {
 }
 
 // ========== دالة getUser ==========
+// ========== دالة getUser (الأولوية للسيرفر) ==========
 async function getUser() {
+    // 1. نجيب الـ id من localStorage
     const localUser = getLocalUser();
     if (!localUser) return null;
+
+    // 2. لو فيه id، نحاول نجيب من السيرفر أولاً
     if (localUser.id) {
         try {
             const freshUser = await apiRequest(`/users/${localUser.id}`, 'GET');
+            // تحديث localStorage بالبيانات الجديدة من السيرفر
             saveLocalUser(freshUser);
             return freshUser;
         } catch (error) {
@@ -47,6 +52,8 @@ async function getUser() {
             return localUser;
         }
     }
+    
+    // 3. لو مفيش id، نرجع المحلي
     return localUser;
 }
 
