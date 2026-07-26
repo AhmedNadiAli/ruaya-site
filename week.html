@@ -149,276 +149,300 @@
 
     <script src="js/app.js"></script>
     <script>
-        // صفحة الأسبوع (مستقلة ولكنها تستخدم الدارك مود العام)
-        (function() {
-            const weekDays = [
-                { name: 'السبت', icon: '📅' },
-                { name: 'الأحد', icon: '📅' },
-                { name: 'الإثنين', icon: '📅' },
-                { name: 'الثلاثاء', icon: '📅' },
-                { name: 'الأربعاء', icon: '📅' },
-                { name: 'الخميس', icon: '📅' },
-                { name: 'الجمعة', icon: '🌟' }
-            ];
+        // ==========================================
+        // بيانات الأسبوع
+        // ==========================================
+        const weekDays = [
+            { name: 'السبت', icon: '📅' },
+            { name: 'الأحد', icon: '📅' },
+            { name: 'الإثنين', icon: '📅' },
+            { name: 'الثلاثاء', icon: '📅' },
+            { name: 'الأربعاء', icon: '📅' },
+            { name: 'الخميس', icon: '📅' },
+            { name: 'الجمعة', icon: '🌟' }
+        ];
 
-            const dayTasks = {
-                0: [
-                    { id: 'sat_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'sat_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'sat_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
-                    { id: 'sat_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-                    { id: 'sat_study2', title: 'جلسة مذاكرة ٢ • كيمياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-                    { id: 'sat_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'sat_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-                    { id: 'sat_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'sat_study3', title: 'مذاكرة مسائية • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' }
-                ],
-                1: [
-                    { id: 'sun_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'sun_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'sun_study1', title: 'جلسة مذاكرة ١ • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' },
-                    { id: 'sun_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-                    { id: 'sun_study2', title: 'جلسة مذاكرة ٢ • فيزياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-                    { id: 'sun_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'sun_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-                    { id: 'sun_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'sun_study3', title: 'مذاكرة مسائية • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
-                ],
-                2: [
-                    { id: 'mon_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'mon_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'mon_study1', title: 'جلسة مذاكرة ١ • عربي', desc: 'ساعة واحدة', time: '٨:٣٠' },
-                    { id: 'mon_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-                    { id: 'mon_study2', title: 'جلسة مذاكرة ٢ • إنجليزي', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-                    { id: 'mon_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'mon_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-                    { id: 'mon_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'mon_study3', title: 'مذاكرة مسائية • تاريخ', desc: 'ساعة واحدة', time: '٨:٣٠' }
-                ],
-                3: [
-                    { id: 'tue_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'tue_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'tue_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
-                    { id: 'tue_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-                    { id: 'tue_study2', title: 'جلسة مذاكرة ٢ • تاريخ', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-                    { id: 'tue_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'tue_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-                    { id: 'tue_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'tue_study3', title: 'مذاكرة مسائية • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
-                ],
-                4: [
-                    { id: 'wed_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'wed_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'wed_study1', title: 'جلسة مذاكرة ١ • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
-                    { id: 'wed_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-                    { id: 'wed_study2', title: 'جلسة مذاكرة ٢ • رياضيات', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-                    { id: 'wed_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'wed_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-                    { id: 'wed_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'wed_study3', title: 'مذاكرة مسائية • فيزياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
-                ],
-                5: [
-                    { id: 'thu_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'thu_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'thu_study1', title: 'مراجعة شاملة', desc: 'ساعتان', time: '٨:٣٠' },
-                    { id: 'thu_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '١٠:٣٠' },
-                    { id: 'thu_study2', title: 'اختبار تجريبي', desc: 'ساعة واحدة', time: '١٠:٤٥' },
-                    { id: 'thu_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'thu_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-                    { id: 'thu_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'thu_study3', title: 'راحة', desc: 'استعداد للجمعة', time: '٨:٣٠' }
-                ],
-                6: [
-                    { id: 'fri_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-                    { id: 'fri_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-                    { id: 'fri_rest', title: 'راحة / هوايات', desc: 'يوم الجمعة راحة', time: '١٠:٠٠' },
-                    { id: 'fri_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-                    { id: 'fri_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-                    { id: 'fri_isha', title: 'عشاء + أذكار', desc: 'إلزامي', time: '٩:٢١' }
-                ]
-            };
+        const dayTasks = {
+            0: [
+                { id: 'sat_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'sat_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'sat_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                { id: 'sat_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                { id: 'sat_study2', title: 'جلسة مذاكرة ٢ • كيمياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                { id: 'sat_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'sat_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                { id: 'sat_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'sat_study3', title: 'مذاكرة مسائية • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' }
+            ],
+            1: [
+                { id: 'sun_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'sun_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'sun_study1', title: 'جلسة مذاكرة ١ • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                { id: 'sun_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                { id: 'sun_study2', title: 'جلسة مذاكرة ٢ • فيزياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                { id: 'sun_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'sun_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                { id: 'sun_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'sun_study3', title: 'مذاكرة مسائية • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+            ],
+            2: [
+                { id: 'mon_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'mon_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'mon_study1', title: 'جلسة مذاكرة ١ • عربي', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                { id: 'mon_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                { id: 'mon_study2', title: 'جلسة مذاكرة ٢ • إنجليزي', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                { id: 'mon_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'mon_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                { id: 'mon_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'mon_study3', title: 'مذاكرة مسائية • تاريخ', desc: 'ساعة واحدة', time: '٨:٣٠' }
+            ],
+            3: [
+                { id: 'tue_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'tue_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'tue_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                { id: 'tue_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                { id: 'tue_study2', title: 'جلسة مذاكرة ٢ • تاريخ', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                { id: 'tue_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'tue_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                { id: 'tue_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'tue_study3', title: 'مذاكرة مسائية • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+            ],
+            4: [
+                { id: 'wed_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'wed_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'wed_study1', title: 'جلسة مذاكرة ١ • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
+                { id: 'wed_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
+                { id: 'wed_study2', title: 'جلسة مذاكرة ٢ • رياضيات', desc: 'ساعة واحدة', time: '١٠:٠٠' },
+                { id: 'wed_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'wed_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                { id: 'wed_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'wed_study3', title: 'مذاكرة مسائية • فيزياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+            ],
+            5: [
+                { id: 'thu_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'thu_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'thu_study1', title: 'مراجعة شاملة', desc: 'ساعتان', time: '٨:٣٠' },
+                { id: 'thu_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '١٠:٣٠' },
+                { id: 'thu_study2', title: 'اختبار تجريبي', desc: 'ساعة واحدة', time: '١٠:٤٥' },
+                { id: 'thu_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'thu_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
+                { id: 'thu_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'thu_study3', title: 'راحة', desc: 'استعداد للجمعة', time: '٨:٣٠' }
+            ],
+            6: [
+                { id: 'fri_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
+                { id: 'fri_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
+                { id: 'fri_rest', title: 'راحة / هوايات', desc: 'يوم الجمعة راحة', time: '١٠:٠٠' },
+                { id: 'fri_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
+                { id: 'fri_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
+                { id: 'fri_isha', title: 'عشاء + أذكار', desc: 'إلزامي', time: '٩:٢١' }
+            ]
+        };
 
-            function getUserData() {
-                try { return JSON.parse(localStorage.getItem('ruaya_user')) || {}; } catch (e) { return {}; }
-            }
+        // ========== دوال مساعدة ==========
+        function getUserData() {
+            try { return JSON.parse(localStorage.getItem('ruaya_user')) || {}; } catch (e) { return {}; }
+        }
 
-            function saveUserData(user) { localStorage.setItem('ruaya_user', JSON.stringify(user)); }
+        function saveUserData(user) { localStorage.setItem('ruaya_user', JSON.stringify(user)); }
 
-            function getDayTasksCount(index) { return dayTasks[index] ? dayTasks[index].length : 0; }
+        function getDayTasksCount(index) { return dayTasks[index] ? dayTasks[index].length : 0; }
 
-            function getDayCompletedCount(index, completedTasks) {
-                const tasks = dayTasks[index] || [];
-                let count = 0;
-                tasks.forEach(task => { if (completedTasks && completedTasks[task.id]) count++; });
-                return count;
-            }
+        function getDayCompletedCount(index, completedTasks) {
+            const tasks = dayTasks[index] || [];
+            let count = 0;
+            tasks.forEach(task => { if (completedTasks && completedTasks[task.id]) count++; });
+            return count;
+        }
 
-            function checkDayCompleted(index, completedTasks) {
-                const tasks = dayTasks[index] || [];
-                if (tasks.length === 0) return false;
-                let allDone = true;
-                tasks.forEach(task => { if (!completedTasks || !completedTasks[task.id]) allDone = false; });
-                return allDone;
-            }
+        function checkDayCompleted(index, completedTasks) {
+            const tasks = dayTasks[index] || [];
+            if (tasks.length === 0) return false;
+            let allDone = true;
+            tasks.forEach(task => { if (!completedTasks || !completedTasks[task.id]) allDone = false; });
+            return allDone;
+        }
 
-            function calculateUnlockedDays() {
-                const user = getUserData();
-                const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
-                const now = new Date();
-                const diffDays = Math.floor((now - weekStart) / (24 * 60 * 60 * 1000));
-                let unlocked = Math.min(diffDays + 1, 7);
-                if (unlocked < 1) unlocked = 1;
-                return unlocked;
-            }
+        // ========== فتح اليوم الأول تلقائياً ==========
+        function calculateUnlockedDays() {
+            const user = getUserData();
+            const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
+            const now = new Date();
+            const diffDays = Math.floor((now - weekStart) / (24 * 60 * 60 * 1000));
+            let unlocked = Math.min(diffDays + 1, 7);
+            if (unlocked < 1) unlocked = 1;
+            return unlocked;
+        }
 
-            window.renderDays = function() {
-                const container = document.getElementById('daysPath');
-                if (!container) return;
+        // ========== عرض الأيام ==========
+        function renderDays() {
+            const container = document.getElementById('daysPath');
+            if (!container) return;
 
-                const user = getUserData();
-                const completedTasks = user.completedTasks || {};
-                const unlockedCount = calculateUnlockedDays();
+            const user = getUserData();
+            const completedTasks = user.completedTasks || {};
+            const unlockedCount = calculateUnlockedDays();
 
-                container.innerHTML = '';
+            container.innerHTML = '';
 
-                weekDays.forEach((day, index) => {
-                    const isUnlocked = index < unlockedCount;
-                    const isCompleted = isUnlocked && checkDayCompleted(index, completedTasks);
-                    const isActive = isUnlocked && !isCompleted;
+            weekDays.forEach((day, index) => {
+                const isUnlocked = index < unlockedCount;
+                const isCompleted = isUnlocked && checkDayCompleted(index, completedTasks);
+                const isActive = isUnlocked && !isCompleted;
 
-                    const item = document.createElement('div');
-                    item.className = 'day-item';
-                    if (!isUnlocked) item.classList.add('locked');
-                    if (isCompleted) item.classList.add('completed');
-                    if (isActive) item.classList.add('active');
+                const item = document.createElement('div');
+                item.className = 'day-item';
+                if (!isUnlocked) item.classList.add('locked');
+                if (isCompleted) item.classList.add('completed');
+                if (isActive) item.classList.add('active');
 
-                    const numberDiv = document.createElement('div');
-                    numberDiv.className = 'day-number';
-                    numberDiv.textContent = index + 1;
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'day-number';
+                numberDiv.textContent = index + 1;
 
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'day-info';
-                    const completedCount = getDayCompletedCount(index, completedTasks);
-                    const totalTasks = getDayTasksCount(index);
-                    infoDiv.innerHTML = `
-                        <div class="day-name">${day.icon} ${day.name}</div>
-                        <div class="day-tasks-count">
-                            ${isUnlocked ? `<span>${completedCount}</span> / ${totalTasks} مهام` : '🔒 مقفل'}
-                        </div>
-                    `;
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'day-info';
+                const completedCount = getDayCompletedCount(index, completedTasks);
+                const totalTasks = getDayTasksCount(index);
+                infoDiv.innerHTML = `
+                    <div class="day-name">${day.icon} ${day.name}</div>
+                    <div class="day-tasks-count">
+                        ${isUnlocked ? `<span>${completedCount}</span> / ${totalTasks} مهام` : '🔒 مقفل'}
+                    </div>
+                `;
 
-                    const statusDiv = document.createElement('div');
-                    statusDiv.className = 'day-status';
-                    if (isCompleted) statusDiv.textContent = '✅';
-                    else if (isActive) statusDiv.textContent = '⏳';
-                    else statusDiv.textContent = '🔒';
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'day-status';
+                if (isCompleted) statusDiv.textContent = '✅';
+                else if (isActive) statusDiv.textContent = '⏳';
+                else statusDiv.textContent = '🔒';
 
-                    item.appendChild(numberDiv);
-                    item.appendChild(infoDiv);
-                    item.appendChild(statusDiv);
+                item.appendChild(numberDiv);
+                item.appendChild(infoDiv);
+                item.appendChild(statusDiv);
 
-                    if (isUnlocked) {
-                        item.addEventListener('click', () => openDayDetail(index));
-                    } else {
-                        item.addEventListener('click', () => {
-                            alert('🔒 هذا اليوم مقفل. أنجز مهام الأيام السابقة لفتحه');
-                        });
-                    }
-
-                    container.appendChild(item);
-                });
-
-                updateProgress();
-            };
-
-            function updateProgress() {
-                const user = getUserData();
-                const completedTasks = user.completedTasks || {};
-                let totalTasks = 0, completedCount = 0;
-                weekDays.forEach((_, index) => {
-                    const tasks = dayTasks[index] || [];
-                    totalTasks += tasks.length;
-                    tasks.forEach(task => { if (completedTasks[task.id]) completedCount++; });
-                });
-                const progress = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
-                document.getElementById('weekProgressText').textContent = progress + '%';
-                document.getElementById('weekProgressFill').style.width = progress + '%';
-            }
-
-            window.openDayDetail = function(index) {
-                const user = getUserData();
-                const completedTasks = user.completedTasks || {};
-                const day = weekDays[index];
-                const tasks = dayTasks[index] || [];
-
-                document.getElementById('detailDayTitle').textContent = `${day.icon} ${day.name}`;
-                const container = document.getElementById('detailTasks');
-                container.innerHTML = '';
-
-                if (tasks.length === 0) {
-                    container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد مهام لهذا اليوم</p>';
+                if (isUnlocked) {
+                    item.addEventListener('click', () => openDayDetail(index));
                 } else {
-                    tasks.forEach(task => {
-                        const isDone = completedTasks[task.id] || false;
-                        const taskDiv = document.createElement('div');
-                        taskDiv.className = 'day-detail-task' + (isDone ? ' done-task' : '');
-
-                        const checkDiv = document.createElement('div');
-                        checkDiv.className = 'task-check' + (isDone ? ' done' : '');
-                        checkDiv.textContent = isDone ? '✓' : '';
-                        checkDiv.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            const userData = getUserData();
-                            if (!userData.completedTasks) userData.completedTasks = {};
-                            userData.completedTasks[task.id] = !userData.completedTasks[task.id];
-                            saveUserData(userData);
-                            window.renderDays();
-                            window.openDayDetail(index);
-                            if (window.updateStatsInUI) { window.updateStatsInUI(userData); }
-                        });
-
-                        const infoDiv = document.createElement('div');
-                        infoDiv.className = 'task-info';
-                        infoDiv.innerHTML = `<div class="task-title">${task.title}</div><div class="task-desc">${task.desc}</div>`;
-
-                        const timeDiv = document.createElement('div');
-                        timeDiv.className = 'task-time';
-                        timeDiv.textContent = task.time;
-
-                        taskDiv.appendChild(checkDiv);
-                        taskDiv.appendChild(infoDiv);
-                        taskDiv.appendChild(timeDiv);
-
-                        container.appendChild(taskDiv);
+                    item.addEventListener('click', () => {
+                        alert('🔒 هذا اليوم مقفل. أنجز مهام الأيام السابقة لفتحه');
                     });
                 }
 
-                document.getElementById('dayDetail').classList.add('show');
-                document.getElementById('dayDetail').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            };
-
-            window.closeDayDetail = function() {
-                document.getElementById('dayDetail').classList.remove('show');
-            };
-
-            document.addEventListener('DOMContentLoaded', function() {
-                const user = getUserData();
-                if (user.name) {
-                    document.getElementById('sidebarName').textContent = user.name;
-                    const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
-                    const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-                    document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
-                    document.querySelector('.user-avatar').textContent = user.name.charAt(0);
-                }
-
-                if (!user.weekStartDate) {
-                    user.weekStartDate = new Date().toISOString();
-                    saveUserData(user);
-                }
-
-                window.renderDays();
+                container.appendChild(item);
             });
-        })();
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const user = getUserData();
+            const completedTasks = user.completedTasks || {};
+            let totalTasks = 0, completedCount = 0;
+            weekDays.forEach((_, index) => {
+                const tasks = dayTasks[index] || [];
+                totalTasks += tasks.length;
+                tasks.forEach(task => { if (completedTasks[task.id]) completedCount++; });
+            });
+            const progress = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+            document.getElementById('weekProgressText').textContent = progress + '%';
+            document.getElementById('weekProgressFill').style.width = progress + '%';
+        }
+
+        // ========== فتح تفاصيل اليوم ==========
+        function openDayDetail(index) {
+            const user = getUserData();
+            const completedTasks = user.completedTasks || {};
+            const day = weekDays[index];
+            const tasks = dayTasks[index] || [];
+
+            document.getElementById('detailDayTitle').textContent = `${day.icon} ${day.name}`;
+            const container = document.getElementById('detailTasks');
+            container.innerHTML = '';
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">لا توجد مهام لهذا اليوم</p>';
+            } else {
+                tasks.forEach(task => {
+                    const isDone = completedTasks[task.id] || false;
+                    const taskDiv = document.createElement('div');
+                    taskDiv.className = 'day-detail-task' + (isDone ? ' done-task' : '');
+
+                    const checkDiv = document.createElement('div');
+                    checkDiv.className = 'task-check' + (isDone ? ' done' : '');
+                    checkDiv.textContent = isDone ? '✓' : '';
+                    checkDiv.addEventListener('click', function(e) {
+                        e.stopPropagation();
+
+                        // ✅ تحديث localStorage
+                        const userData = getUserData();
+                        if (!userData.completedTasks) userData.completedTasks = {};
+                        userData.completedTasks[task.id] = !userData.completedTasks[task.id];
+                        saveUserData(userData);
+
+                        // ✅ تحديث الواجهة
+                        renderDays();
+                        openDayDetail(index);
+
+                        // ✅ تحديث Dashboard (لو موجود)
+                        if (window.updateStatsInUI) {
+                            window.updateStatsInUI(userData);
+                        }
+                        if (window.updateWeeklyProgress) {
+                            window.updateWeeklyProgress(userData);
+                        }
+                    });
+
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'task-info';
+                    infoDiv.innerHTML = `
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-desc">${task.desc}</div>
+                    `;
+
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = 'task-time';
+                    timeDiv.textContent = task.time;
+
+                    taskDiv.appendChild(checkDiv);
+                    taskDiv.appendChild(infoDiv);
+                    taskDiv.appendChild(timeDiv);
+
+                    container.appendChild(taskDiv);
+                });
+            }
+
+            document.getElementById('dayDetail').classList.add('show');
+            document.getElementById('dayDetail').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function closeDayDetail() {
+            document.getElementById('dayDetail').classList.remove('show');
+        }
+
+        // ==========================================
+        // تحميل الصفحة
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = getUserData();
+            if (user.name) {
+                document.getElementById('sidebarName').textContent = user.name;
+                const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
+                const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
+                document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
+                document.querySelector('.user-avatar').textContent = user.name.charAt(0);
+            }
+
+            if (!user.weekStartDate) {
+                user.weekStartDate = new Date().toISOString();
+                saveUserData(user);
+            }
+
+            renderDays();
+        });
+
+        window.openDayDetail = openDayDetail;
+        window.closeDayDetail = closeDayDetail;
     </script>
 </body>
 </html>

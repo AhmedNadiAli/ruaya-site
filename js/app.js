@@ -41,7 +41,6 @@ async function getUser() {
     if (localUser.id) {
         try {
             const freshUser = await apiRequest(`/users/${localUser.id}`, 'GET');
-            // تحديث localStorage بالبيانات الجديدة من السيرفر
             saveLocalUser(freshUser);
             return freshUser;
         } catch (error) {
@@ -50,6 +49,32 @@ async function getUser() {
         }
     }
     return localUser;
+}
+
+// ========== دوال حساب النقاط والتقدم ==========
+function calculateStats(completedTasks) {
+    // عدد المهام الكلي في الأسبوع (تقريباً 63)
+    const totalTasks = 63;
+    const completed = completedTasks ? Object.values(completedTasks).filter(v => v === true).length : 0;
+    const points = completed * 10;
+    const progress = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+    const streak = completed;
+    return { completed, points, progress, streak, totalTasks };
+}
+
+function updateStatsInUI(user) {
+    const stats = calculateStats(user.completedTasks || {});
+    const progressEl = document.getElementById('progressValue');
+    const streakEl = document.getElementById('streakValue');
+    const streakTextEl = document.getElementById('streakText');
+    const scoreEl = document.getElementById('scoreValue');
+    const tasksEl = document.getElementById('tasksValue');
+
+    if (progressEl) progressEl.textContent = stats.progress + '%';
+    if (streakEl) streakEl.textContent = stats.streak;
+    if (streakTextEl) streakTextEl.textContent = stats.streak;
+    if (scoreEl) scoreEl.textContent = stats.points;
+    if (tasksEl) tasksEl.textContent = 9; // مهام اليوم (ثابتة مؤقتاً)
 }
 
 // ========== دوال Onboarding ==========
@@ -103,7 +128,6 @@ window.loginUser = async function(email, password) {
     try {
         const result = await apiRequest('/users/login', 'POST', { email, password });
         if (result && result.user) {
-            // ✅ التأكد من قيمة onboardingDone (السيرفر بيرجعها كـ 0 أو 1)
             const userData = {
                 ...result.user,
                 onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
@@ -123,7 +147,6 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
     try {
         const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year });
         if (result && result.id) {
-            // بناء كائن المستخدم يدوياً (لأن السيرفر بيرجع id فقط)
             const userData = {
                 id: result.id,
                 name: name,
@@ -154,110 +177,6 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
         throw error;
     }
 };
-
-// ========== مهام كل يوم ==========
-const weekDays = [
-    { name: 'السبت' },
-    { name: 'الأحد' },
-    { name: 'الإثنين' },
-    { name: 'الثلاثاء' },
-    { name: 'الأربعاء' },
-    { name: 'الخميس' },
-    { name: 'الجمعة' }
-];
-
-const dayTasks = {
-    0: [
-        { id: 'sat_fajr' }, { id: 'sat_morning' }, { id: 'sat_study1' },
-        { id: 'sat_break1' }, { id: 'sat_study2' }, { id: 'sat_dhuhr' },
-        { id: 'sat_exercise' }, { id: 'sat_maghrib' }, { id: 'sat_study3' }
-    ],
-    1: [
-        { id: 'sun_fajr' }, { id: 'sun_morning' }, { id: 'sun_study1' },
-        { id: 'sun_break1' }, { id: 'sun_study2' }, { id: 'sun_dhuhr' },
-        { id: 'sun_exercise' }, { id: 'sun_maghrib' }, { id: 'sun_study3' }
-    ],
-    2: [
-        { id: 'mon_fajr' }, { id: 'mon_morning' }, { id: 'mon_study1' },
-        { id: 'mon_break1' }, { id: 'mon_study2' }, { id: 'mon_dhuhr' },
-        { id: 'mon_exercise' }, { id: 'mon_maghrib' }, { id: 'mon_study3' }
-    ],
-    3: [
-        { id: 'tue_fajr' }, { id: 'tue_morning' }, { id: 'tue_study1' },
-        { id: 'tue_break1' }, { id: 'tue_study2' }, { id: 'tue_dhuhr' },
-        { id: 'tue_exercise' }, { id: 'tue_maghrib' }, { id: 'tue_study3' }
-    ],
-    4: [
-        { id: 'wed_fajr' }, { id: 'wed_morning' }, { id: 'wed_study1' },
-        { id: 'wed_break1' }, { id: 'wed_study2' }, { id: 'wed_dhuhr' },
-        { id: 'wed_exercise' }, { id: 'wed_maghrib' }, { id: 'wed_study3' }
-    ],
-    5: [
-        { id: 'thu_fajr' }, { id: 'thu_morning' }, { id: 'thu_study1' },
-        { id: 'thu_break1' }, { id: 'thu_study2' }, { id: 'thu_dhuhr' },
-        { id: 'thu_exercise' }, { id: 'thu_maghrib' }, { id: 'thu_study3' }
-    ],
-    6: [
-        { id: 'fri_fajr' }, { id: 'fri_morning' }, { id: 'fri_rest' },
-        { id: 'fri_dhuhr' }, { id: 'fri_maghrib' }, { id: 'fri_isha' }
-    ]
-};
-
-// ========== حساب اليوم الحالي ==========
-function getCurrentDayIndex() {
-    const user = getLocalUser();
-    if (!user) return 0;
-    const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
-    const now = new Date();
-    const diffDays = Math.floor((now - weekStart) / (24 * 60 * 60 * 1000));
-    return Math.min(Math.max(diffDays, 0), 6);
-}
-
-// ========== دوال حساب النقاط والتقدم ==========
-function calculateStats(completedTasks) {
-    let totalTasks = 0;
-    let completed = 0;
-    for (let i = 0; i < 7; i++) {
-        const tasks = dayTasks[i] || [];
-        totalTasks += tasks.length;
-        tasks.forEach(task => {
-            if (completedTasks && completedTasks[task.id]) completed++;
-        });
-    }
-    const points = completed * 10;
-    const progress = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
-    const streak = completed;
-    return { completed, points, progress, streak, totalTasks };
-}
-
-function getTodayTasks(completedTasks) {
-    const todayIndex = getCurrentDayIndex();
-    const tasks = dayTasks[todayIndex] || [];
-    let total = tasks.length;
-    let done = 0;
-    tasks.forEach(task => {
-        if (completedTasks && completedTasks[task.id]) done++;
-    });
-    return { total, done, remaining: total - done };
-}
-
-function updateStatsInUI(user) {
-    const completedTasks = user.completedTasks || {};
-    const stats = calculateStats(completedTasks);
-    const todayStats = getTodayTasks(completedTasks);
-
-    const progressEl = document.getElementById('progressValue');
-    const streakEl = document.getElementById('streakValue');
-    const streakTextEl = document.getElementById('streakText');
-    const scoreEl = document.getElementById('scoreValue');
-    const tasksEl = document.getElementById('tasksValue');
-
-    if (progressEl) progressEl.textContent = stats.progress + '%';
-    if (streakEl) streakEl.textContent = stats.streak;
-    if (streakTextEl) streakTextEl.textContent = stats.streak;
-    if (scoreEl) scoreEl.textContent = stats.points;
-    if (tasksEl) tasksEl.textContent = todayStats.remaining;
-}
 
 // ========== دوال Dashboard ==========
 async function loadDashboard() {
@@ -301,15 +220,13 @@ async function loadDashboard() {
 
 // ========== تحديث رحلة الشهر ==========
 function updateWeeklyProgress(user) {
-    const completedTasks = user.completedTasks || {};
-    const stats = calculateStats(completedTasks);
+    const stats = calculateStats(user.completedTasks || {});
     const progress = stats.progress;
 
     let currentWeek = 1;
     if (progress >= 75) currentWeek = 4;
     else if (progress >= 50) currentWeek = 3;
     else if (progress >= 25) currentWeek = 2;
-    else currentWeek = 1;
 
     const weekNodes = document.querySelectorAll('.path-node');
     weekNodes.forEach((node, index) => {
@@ -630,8 +547,6 @@ window.loginUser = loginUser;
 window.loadDashboard = loadDashboard;
 window.updateStatsInUI = updateStatsInUI;
 window.calculateStats = calculateStats;
-window.getCurrentDayIndex = getCurrentDayIndex;
-window.getTodayTasks = getTodayTasks;
 
 // ==========================================
 // ========== Dark Mode ==========
