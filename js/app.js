@@ -4,18 +4,6 @@
 
 const API_BASE_URL = 'https://ruaya-backend-production.up.railway.app/api';
 
-const PATH_NAMES = {
-    medicine: 'طب وعلوم حياة',
-    engineering: 'هندسة وعلوم حاسب',
-    arts: 'آداب وفنون',
-    business: 'إدارة أعمال'
-};
-
-const PROTECTED_PAGES = [
-    'dashboard.html', 'plan.html', 'week.html', 'subjects.html',
-    'exams.html', 'leaderboard.html', 'profile.html', 'onboarding.html'
-];
-
 // ========== دوال مساعدة للـ API ==========
 async function apiRequest(endpoint, method = 'GET', data = null) {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -23,8 +11,6 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
         method: method,
         headers: { 'Content-Type': 'application/json' }
     };
-    const token = localStorage.getItem('ruaya_token');
-    if (token) options.headers['Authorization'] = `Bearer ${token}`;
     if (data) options.body = JSON.stringify(data);
     try {
         const response = await fetch(url, options);
@@ -47,44 +33,35 @@ function saveLocalUser(user) {
     localStorage.setItem('ruaya_user', JSON.stringify(user));
 }
 
-function saveAuthToken(token) {
-    if (token) localStorage.setItem('ruaya_token', token);
+// ========== ثوابت وبيانات مشتركة (بدل التكرار في كل صفحة) ==========
+const PATH_NAMES = {
+    medicine: 'طب وعلوم حياة',
+    engineering: 'هندسة وعلوم حاسب',
+    arts: 'آداب وفنون',
+    business: 'إدارة أعمال'
+};
+
+function getPathName(path) {
+    return PATH_NAMES[path] || 'مسار';
 }
 
-function logoutUser() {
-    localStorage.removeItem('ruaya_user');
-    localStorage.removeItem('ruaya_token');
+function getYearText(year) {
+    return year === '2' ? 'السنة التانية' : 'السنة التالتة';
 }
 
-function requireAuth() {
-    const page = window.location.pathname.split('/').pop();
-    if (!PROTECTED_PAGES.includes(page)) return;
-    if (!getLocalUser()) window.location.href = 'login.html';
-}
-
-function updateSidebarUser(user) {
+// تحديث الشريط الجانبي (اسم + مسار/سنة + أفاتار) — نفس المنطق كان متكرر في كل صفحة
+function updateSidebar(user) {
     if (!user || !user.name) return;
-    const pathLabel = `${PATH_NAMES[user.path] || 'مسار'} • ${user.year === '2' ? 'السنة التانية' : 'السنة التالتة'}`;
-    document.querySelectorAll('.user-avatar').forEach(el => { el.textContent = user.name.charAt(0); });
-    document.querySelectorAll('.user-info h4, #sidebarName').forEach(el => { el.textContent = user.name; });
-    document.querySelectorAll('.user-info span, #sidebarPath').forEach(el => { el.textContent = pathLabel; });
+    const nameEl = document.getElementById('sidebarName');
+    const pathEl = document.getElementById('sidebarPath');
+    const avatarEl = document.querySelector('.user-avatar');
+    if (nameEl) nameEl.textContent = user.name;
+    if (pathEl) pathEl.textContent = `${getPathName(user.path)} • ${getYearText(user.year)}`;
+    if (avatarEl) avatarEl.textContent = user.name.charAt(0);
 }
-
-async function syncUserProgress(user) {
-    if (!user || !user.id) return;
-    const stats = calculateStats(user.completedTasks || {});
-    const payload = {
-        completedTasks: user.completedTasks || {},
-        points: stats.points,
-        streak: stats.streak,
-        progress: stats.progress
-    };
-    try {
-        await apiRequest(`/users/${user.id}`, 'PUT', payload);
-    } catch (e) {
-        console.warn('⚠️ فشل مزامنة التقدم مع السيرفر');
-    }
-}
+window.updateSidebar = updateSidebar;
+window.getPathName = getPathName;
+window.getYearText = getYearText;
 
 // ========== دالة getUser ==========
 async function getUser() {
@@ -113,11 +90,7 @@ async function saveOnboardingData(formData) {
             return;
         }
 
-        user.name = formData.name || user.name;
-        if (!user.name) {
-            alert('الاسم مطلوب');
-            return;
-        }
+        user.name = formData.name || user.name || 'أحمد نادي';
         user.path = formData.path;
         user.year = formData.year;
         user.specialization = formData.specialization || '';
@@ -163,7 +136,6 @@ window.loginUser = async function(email, password) {
                 onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
             };
             saveLocalUser(userData);
-            if (result.token) saveAuthToken(result.token);
             return { user: userData };
         }
         throw new Error('بيانات غير صحيحة');
@@ -174,20 +146,17 @@ window.loginUser = async function(email, password) {
 };
 
 // ========== دوال التسجيل ==========
-window.registerUser = async function(name, email, password, path = 'medicine', year = '2', extra = {}) {
+window.registerUser = async function(name, email, password, path = 'medicine', year = '2', parentPhone = '') {
     try {
-        const result = await apiRequest('/users/register', 'POST', {
-            name, email, password, path, year,
-            studentId: extra.studentId || '',
-            parentPhone: extra.parentPhone || ''
-        });
+        // ملحوظة: parentPhone بتتبعت للسيرفر لو الباك اند بيدعمها؛ لو الحقل مش موجود
+        // في السيرفر لسه، هيتجاهله السيرفر عادي من غير ما يكسر التسجيل
+        const result = await apiRequest('/users/register', 'POST', { name, email, password, path, year, parentPhone });
         if (result && result.id) {
             const userData = {
                 id: result.id,
                 name: name,
                 email: email,
-                studentId: extra.studentId || '',
-                parentPhone: extra.parentPhone || '',
+                parentPhone: parentPhone || '',
                 path: path,
                 year: year,
                 specialization: '',
@@ -197,6 +166,7 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
                 onboardingDone: false,
                 points: 0,
                 streak: 0,
+                lastActiveDate: null,
                 progress: 0,
                 completedTasks: {},
                 badges: {},
@@ -206,7 +176,6 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
                 createdAt: new Date().toISOString()
             };
             saveLocalUser(userData);
-            if (result.token) saveAuthToken(result.token);
             return { user: userData };
         }
         throw new Error('فشل التسجيل');
@@ -305,7 +274,9 @@ const dayTasks = {
 };
 
 // ========== دوال حساب النقاط والتقدم ==========
-function calculateStats(completedTasks) {
+// ملحوظة: الستريك بقى محسوب من تاريخ فعلي (آخر يوم كان فيه المستخدم نشط)
+// مش من مجموع المهام المنجزة زي الأول (كان بيدي رقم غلط تمامًا)
+function calculateStats(completedTasks, user) {
     let totalTasks = 0;
     let completed = 0;
     for (let i = 0; i < 7; i++) {
@@ -317,9 +288,112 @@ function calculateStats(completedTasks) {
     }
     const points = completed * 10;
     const progress = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
-    const streak = completed;
+    const streak = (user && typeof user.streak === 'number') ? user.streak : 0;
     return { completed, points, progress, streak, totalTasks };
 }
+
+// ========== الستريك الحقيقي (أيام متتالية) ==========
+// بتتنادى كل ما المستخدم يخلّص مهمة، وبتقارن آخر يوم نشط بالنهاردة
+function updateStreakOnActivity(user) {
+    const todayKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const lastKey = user.lastActiveDate ? user.lastActiveDate.split('T')[0] : null;
+
+    if (lastKey === todayKey) {
+        // اتحسب النهاردة قبل كدا، متزودش تاني
+        return user;
+    }
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toISOString().split('T')[0];
+
+    if (lastKey === yesterdayKey) {
+        user.streak = (user.streak || 0) + 1; // استمرارية
+    } else {
+        user.streak = 1; // انقطع الاستمرار أو أول مرة
+    }
+    user.lastActiveDate = new Date().toISOString();
+    return user;
+}
+
+// ========== الأسبوع الحالي من الشهر (حسب التاريخ الفعلي مش نسبة الإنجاز) ==========
+function getCurrentMonthWeek() {
+    const dayOfMonth = new Date().getDate();
+    const week = Math.ceil(dayOfMonth / 7);
+    return Math.min(week, 4); // أسابيع 1-4، والعقدة الخامسة "نهاية الشهر" بتتحدد لوحدها في العرض
+}
+
+// نسبة تقدم الشهر ككل = مبنية على الأسبوع الحالي (حسب التاريخ) + تقدم مهام الأسبوع الحالي
+function getMonthProgress(weekTaskProgress) {
+    const currentWeek = getCurrentMonthWeek();
+    const base = (currentWeek - 1) * 25;
+    const extra = (weekTaskProgress || 0) * 0.25;
+    return Math.min(100, Math.round(base + extra));
+}
+
+window.updateStreakOnActivity = updateStreakOnActivity;
+window.getCurrentMonthWeek = getCurrentMonthWeek;
+window.getMonthProgress = getMonthProgress;
+
+// ========== نظام الشارات — دلوقتي بيتفعّل فعليًا ==========
+function checkAndAwardBadges(user, stats) {
+    if (!user.badges) user.badges = {};
+    const b = user.badges;
+    let changed = false;
+
+    const award = (id, condition) => {
+        if (condition && !b[id]) { b[id] = true; changed = true; }
+    };
+
+    award('first_day', stats.completed >= 1);
+    award('streak_7', (user.streak || 0) >= 7);
+    award('streak_30', (user.streak || 0) >= 30);
+    award('week_complete', stats.totalTasks > 0 && stats.completed === stats.totalTasks);
+    award('points_100', stats.points >= 100);
+    award('points_1000', stats.points >= 1000);
+    // "الملك" (شهر كامل) هتتفعل لما محتوى الأسابيع الأربعة الفعلي يتحدد مع الباك اند
+
+    return changed;
+}
+window.checkAndAwardBadges = checkAndAwardBadges;
+
+// ========== تبديل حالة مهمة (نقطة واحدة موحّدة بدل تكرار المنطق في كل صفحة) ==========
+// بتحدث كل حاجة محليًا فورًا، وبتحاول تبعت للسيرفر في الخلفية عشان البيانات متضيعش
+// لما تتزامن من جديد (getUser بتجيب من السيرفر وتكتب فوق الـ localStorage)
+async function toggleTaskCompletion(taskId) {
+    const user = getLocalUser();
+    if (!user) return null;
+
+    if (!user.completedTasks) user.completedTasks = {};
+    const isNowDone = !user.completedTasks[taskId];
+    user.completedTasks[taskId] = isNowDone;
+
+    if (isNowDone) {
+        updateStreakOnActivity(user);
+    }
+
+    const stats = calculateStats(user.completedTasks, user);
+    checkAndAwardBadges(user, stats);
+
+    saveLocalUser(user);
+
+    // نبعت للسيرفر في الخلفية (best-effort) عشان أي مزامنة لاحقة متمسحش التقدم
+    if (user.id) {
+        try {
+            await apiRequest(`/users/${user.id}`, 'PUT', {
+                completedTasks: user.completedTasks,
+                streak: user.streak || 0,
+                lastActiveDate: user.lastActiveDate || null,
+                badges: user.badges || {}
+            });
+        } catch (e) {
+            console.warn('⚠️ فشل مزامنة المهمة مع السيرفر، هتتحاول تاني لاحقًا');
+        }
+    }
+
+    return user;
+}
+window.toggleTaskCompletion = toggleTaskCompletion;
 
 function getTodayTasks(completedTasks) {
     const todayIndex = getCurrentDayIndex();
@@ -345,8 +419,9 @@ function getCurrentDayIndex() {
 
 function updateStatsInUI(user) {
     const completedTasks = user.completedTasks || {};
-    const stats = calculateStats(completedTasks);
+    const stats = calculateStats(completedTasks, user);
     const todayStats = getTodayTasks(completedTasks);
+    const monthProgress = getMonthProgress(stats.progress);
 
     const progressEl = document.getElementById('progressValue');
     const streakEl = document.getElementById('streakValue');
@@ -354,7 +429,7 @@ function updateStatsInUI(user) {
     const scoreEl = document.getElementById('scoreValue');
     const tasksEl = document.getElementById('tasksValue');
 
-    if (progressEl) progressEl.textContent = stats.progress + '%';
+    if (progressEl) progressEl.textContent = monthProgress + '%';
     if (streakEl) streakEl.textContent = stats.streak;
     if (streakTextEl) streakTextEl.textContent = stats.streak;
     if (scoreEl) scoreEl.textContent = stats.points;
@@ -370,21 +445,22 @@ async function loadDashboard() {
             return;
         }
 
-        const userNameEl = document.getElementById('userName');
-        if (userNameEl) userNameEl.textContent = user.name.split(' ')[0];
+        document.getElementById('userName').textContent = user.name.split(' ')[0];
         updateStatsInUI(user);
-        updateSidebarUser(user);
+        updateSidebar(user);
 
-        const stats = calculateStats(user.completedTasks || {});
-        renderPathNodes(stats.progress);
+        // نبني عقد رحلة الشهر أولاً (كانت بتتبنى بس في مسار احتياطي مستحيل يتنفذ عمليًا)
+        if (typeof window.renderPathNodes === 'function') {
+            window.renderPathNodes(getCurrentMonthWeek());
+        }
+        updateWeeklyProgress(user);
 
         setInterval(async () => {
             try {
                 const freshUser = await getUser();
                 if (freshUser) {
                     updateStatsInUI(freshUser);
-                    const freshStats = calculateStats(freshUser.completedTasks || {});
-                    renderPathNodes(freshStats.progress);
+                    updateWeeklyProgress(freshUser);
                 }
             } catch (e) {}
         }, 10000);
@@ -394,78 +470,13 @@ async function loadDashboard() {
     }
 }
 
-function renderPathNodes(progressPercent) {
-    const container = document.getElementById('pathNodes');
-    if (!container) return;
-
-    let currentWeek = 1;
-    if (progressPercent >= 75) currentWeek = 4;
-    else if (progressPercent >= 50) currentWeek = 3;
-    else if (progressPercent >= 25) currentWeek = 2;
-
-    const weeks = [
-        { num: 1, title: 'الأسبوع الأول' },
-        { num: 2, title: 'الأسبوع الثاني' },
-        { num: 3, title: 'الأسبوع الثالث' },
-        { num: 4, title: 'الأسبوع الرابع' },
-        { num: 5, title: 'نهاية الشهر', isFinal: true }
-    ];
-
-    let html = '';
-    weeks.forEach((w, index) => {
-        const weekNum = index + 1;
-        let circleClass = 'locked';
-        let circleContent = w.isFinal ? '🏆' : w.num;
-        let badgeText = 'مقفل';
-        let badgeStyle = 'background:#f1f5f9;color:#94a3b8;';
-        let infoText = 'مقفل • يبدأ قريباً';
-
-        if (weekNum < currentWeek) {
-            circleClass = 'completed';
-            circleContent = '✓';
-            badgeText = 'مكتمل';
-            badgeStyle = 'background:#dcfce7;color:#16a34a;';
-            infoText = 'تم بنجاح • 100%';
-        } else if (weekNum === currentWeek && !w.isFinal) {
-            circleClass = 'current';
-            circleContent = w.num;
-            badgeText = 'الحالي';
-            badgeStyle = 'background:#ede9fe;color:#6d28d9;';
-            const weekProgress = Math.min(Math.max(progressPercent - ((currentWeek - 1) * 25), 0), 25);
-            infoText = `جاري الآن • ${Math.round(weekProgress)}%`;
-        } else if (w.isFinal && progressPercent >= 100) {
-            circleClass = 'completed';
-            circleContent = '🏆';
-            badgeText = 'مكتمل';
-            badgeStyle = 'background:#dcfce7;color:#16a34a;';
-            infoText = 'أحسنت! خلصت الشهر';
-        }
-
-        html += `
-            <div class="path-node" onclick="window.location.href='week.html'">
-                <div class="node-circle ${circleClass}">${circleContent}</div>
-                <div class="node-info">
-                    <h4>${w.title}</h4>
-                    <span>${infoText}</span>
-                </div>
-                <span class="node-badge" style="${badgeStyle}">${badgeText}</span>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
 function updateWeeklyProgress(user) {
     const completedTasks = user.completedTasks || {};
-    const stats = calculateStats(completedTasks);
-    const progress = stats.progress;
-
-    let currentWeek = 1;
-    if (progress >= 75) currentWeek = 4;
-    else if (progress >= 50) currentWeek = 3;
-    else if (progress >= 25) currentWeek = 2;
-    else currentWeek = 1;
+    const stats = calculateStats(completedTasks, user);
+    // الأسبوع الحالي بقى محسوب من التاريخ الفعلي، مش من نسبة إنجاز أسبوع واحد
+    // (كان بيدي انطباع إن الشهر خلص بمجرد ما تخلص أسبوع واحد من المهام)
+    const currentWeek = getCurrentMonthWeek();
+    const weekTaskProgress = stats.progress; // تقدم مهام الأسبوع الحالي (نفس القالب بيتكرر أسبوعيًا لحد ما محتوى 4 أسابيع مستقل يتضاف)
 
     const weekNodes = document.querySelectorAll('.path-node');
     weekNodes.forEach((node, index) => {
@@ -496,8 +507,7 @@ function updateWeeklyProgress(user) {
                 badge.style.color = '#6d28d9';
             }
             if (infoSpan) {
-                const weekProgress = Math.min(progress - ((currentWeek - 1) * 25), 25);
-                infoSpan.textContent = `جاري الآن • ${Math.round(weekProgress)}%`;
+                infoSpan.textContent = `جاري الآن • ${Math.round(weekTaskProgress)}%`;
             }
         } else {
             circle.classList.add('locked');
@@ -513,59 +523,8 @@ function updateWeeklyProgress(user) {
 }
 
 // ========== دوال Profile ==========
-async function loadProfile() {
-    try {
-        const user = await getUser();
-        if (!user) {
-            window.location.href = 'login.html';
-            return;
-        }
-
-        updateSidebarUser(user);
-
-        const profileName = document.getElementById('profileName');
-        if (profileName) profileName.textContent = user.name;
-        const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-        const profilePathYear = document.getElementById('profilePathYear');
-        if (profilePathYear) profilePathYear.textContent = `${PATH_NAMES[user.path] || 'مسار'} • ${yearText}`;
-
-        const stats = calculateStats(user.completedTasks || {});
-        const profilePoints = document.getElementById('profilePoints');
-        if (profilePoints) profilePoints.textContent = stats.points;
-        const profileStreak = document.getElementById('profileStreak');
-        if (profileStreak) profileStreak.textContent = stats.streak;
-        const profileProgress = document.getElementById('profileProgress');
-        if (profileProgress) profileProgress.textContent = stats.progress + '%';
-
-        const editName = document.getElementById('editName');
-        if (editName) editName.value = user.name;
-        const editPath = document.getElementById('editPath');
-        if (editPath) editPath.value = user.path;
-        const editYear = document.getElementById('editYear');
-        if (editYear) editYear.value = user.year;
-
-        const detailPath = document.getElementById('detailPath');
-        if (detailPath) detailPath.textContent = PATH_NAMES[user.path] || 'لم يحدد';
-        const detailSpecialization = document.getElementById('detailSpecialization');
-        if (detailSpecialization) detailSpecialization.textContent = user.specialization || 'لم يحدد';
-        const detailYear = document.getElementById('detailYear');
-        if (detailYear) detailYear.textContent = yearText;
-        const detailGoal = document.getElementById('detailGoal');
-        if (detailGoal) detailGoal.textContent = user.goalScore || '500';
-        const timeMap = { morning: 'الصباح', afternoon: 'بعد الظهر', evening: 'بالليل' };
-        const detailTime = document.getElementById('detailTime');
-        if (detailTime) detailTime.textContent = timeMap[user.preferredTime] || 'لم يحدد';
-        const detailSubjects = document.getElementById('detailSubjects');
-        if (detailSubjects) {
-            const subjects = getUserSubjects(user);
-            detailSubjects.textContent = subjects.length > 0 ? subjects.join(' - ') : 'لم تحدد';
-        }
-
-        renderBadges(user.badges || {});
-    } catch (error) {
-        console.error('❌ خطأ في تحميل البروفايل:', error);
-    }
-}
+// (دالة تحميل صفحة البروفايل الكاملة موجودة في profile.html نفسها، لأنها بتعرض
+// تفاصيل إضافية زي الهدف ووقت المذاكرة؛ هنا بنسيب بس الدوال المشتركة زي الشارات والحفظ)
 
 function renderBadges(userBadges) {
     const allBadges = [
@@ -595,58 +554,7 @@ function renderBadges(userBadges) {
     });
 }
 
-async function saveProfile() {
-    try {
-        const user = await getUser();
-        if (!user) return;
-
-        const name = document.getElementById('editName').value.trim();
-        const path = document.getElementById('editPath').value;
-        const year = document.getElementById('editYear').value;
-
-        if (!name) {
-            document.getElementById('editMessage').textContent = '⚠️ الاسم مطلوب';
-            return;
-        }
-
-        const lastChange = user.lastPathChange ? new Date(user.lastPathChange) : null;
-        const now = new Date();
-        if (lastChange && (now - lastChange) < 24 * 60 * 60 * 1000) {
-            const remaining = 24 * 60 * 60 * 1000 - (now - lastChange);
-            const hours = Math.floor(remaining / (60 * 60 * 1000));
-            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-            document.getElementById('editMessage').textContent = `⚠️ انتظر ${hours} ساعة و ${minutes} دقيقة`;
-            return;
-        }
-
-        const updatedUser = {
-            name: name,
-            path: path,
-            year: year,
-            lastPathChange: now.toISOString()
-        };
-
-        if (user.id) {
-            try {
-                await apiRequest(`/users/${user.id}`, 'PUT', updatedUser);
-                const freshUser = await apiRequest(`/users/${user.id}`, 'GET');
-                saveLocalUser(freshUser);
-            } catch (e) {
-                console.warn('⚠️ فشل تحديث السيرفر، نستخدم localStorage');
-                saveLocalUser({ ...user, ...updatedUser });
-            }
-        } else {
-            saveLocalUser({ ...user, ...updatedUser });
-        }
-
-        document.getElementById('editMessage').textContent = '✅ تم الحفظ!';
-        document.getElementById('editMessage').style.color = 'var(--success)';
-        setTimeout(() => loadProfile(), 500);
-    } catch (error) {
-        console.error('❌ خطأ في حفظ البروفايل:', error);
-        document.getElementById('editMessage').textContent = '❌ حدث خطأ';
-    }
-}
+// ملحوظة: دالة حفظ البروفايل الكاملة موجودة في profile.html (بتحدث تفاصيل إضافية)
 
 // ========== الأوائل ==========
 async function loadLeaderboard() {
@@ -671,7 +579,7 @@ async function loadLeaderboard() {
         }
 
         users.forEach(user => {
-            const stats = calculateStats(user.completedTasks || {});
+            const stats = calculateStats(user.completedTasks || {}, user);
             user._points = stats.points;
             user._streak = stats.streak;
             user._progress = stats.progress;
@@ -781,24 +689,13 @@ function getSpecializationOptions(path) {
     return map[path] || [];
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    requireAuth();
-    applyDarkMode();
-    const path = window.location.pathname.split('/').pop();
-    if (path === 'dashboard.html' || path === '') loadDashboard();
-    else if (path === 'profile.html') loadProfile();
-    else if (path === 'leaderboard.html') loadLeaderboard();
-    else if (path === 'subjects.html') loadSubjects();
-});
+// ملحوظة: تم حذف الراوتر التلقائي اللي كان هنا (كان بينادي loadDashboard/loadProfile/...
+// حسب اسم الصفحة) لأن كل صفحة أصلاً عندها استدعاء صريح لدالتها في السكريبت بتاعها،
+// وده كان بيسبب نداء كل دالة تحميل مرتين (طلبات API مضاعفة + setInterval مضاعف في الداشبورد)
 
 // ========== تصدير الدوال ==========
-window.renderPathNodes = renderPathNodes;
-window.syncUserProgress = syncUserProgress;
-window.updateSidebarUser = updateSidebarUser;
-window.logoutUser = logoutUser;
 window.saveOnboardingData = saveOnboardingData;
 window.getSpecializationOptions = getSpecializationOptions;
-window.saveProfile = saveProfile;
 window.loadLeaderboard = loadLeaderboard;
 window.loadSubjects = loadSubjects;
 window.getUser = getUser;
@@ -806,6 +703,7 @@ window.registerUser = registerUser;
 window.loginUser = loginUser;
 window.loadDashboard = loadDashboard;
 window.updateStatsInUI = updateStatsInUI;
+window.renderBadges = renderBadges;
 window.calculateStats = calculateStats;
 window.getCurrentDayIndex = getCurrentDayIndex;
 window.getTodayTasks = getTodayTasks;

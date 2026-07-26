@@ -94,7 +94,7 @@
             <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
             <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
             <li class="nav-item">
-                <a href="login.html" class="nav-link" onclick="logoutUser();">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
                     <span class="icon">🚪</span> تسجيل الخروج
                 </a>
             </li>
@@ -144,35 +144,9 @@
             if (!container) return;
 
             const user = JSON.parse(localStorage.getItem('ruaya_user')) || {};
+            if (window.updateSidebar) window.updateSidebar(user);
 
-            if (user.name) {
-                document.getElementById('sidebarName').textContent = user.name;
-                const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
-                const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-                document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
-                document.querySelector('.user-avatar').textContent = user.name.charAt(0);
-            }
-
-            function getSubjects() {
-                const year = user.year || '2';
-                const path = user.path || 'medicine';
-                const specialization = user.specialization || '';
-
-                const core = ['عربي', 'إنجليزي', 'تاريخ وطني'];
-                if (year === '2') {
-                    return specialization ? [...core, specialization] : core;
-                } else {
-                    const map = {
-                        'medicine': ['أحياء', 'كيمياء'],
-                        'engineering': ['رياضيات', 'فيزياء'],
-                        'arts': ['جغرافيا', 'إحصاء'],
-                        'business': ['اقتصاد', 'رياضيات']
-                    };
-                    return map[path] || core;
-                }
-            }
-
-            const subjects = getSubjects();
+            const subjects = window.getUserSubjects(user);
             const weekDays = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 
             container.innerHTML = '';

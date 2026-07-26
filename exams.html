@@ -21,7 +21,7 @@
             <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
             <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
             <li class="nav-item">
-                <a href="login.html" class="nav-link" onclick="logoutUser();">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
                     <span class="icon">🚪</span> تسجيل الخروج
                 </a>
             </li>
@@ -58,13 +58,7 @@
     <script src="js/app.js"></script>
     <script>
         const user = JSON.parse(localStorage.getItem('ruaya_user')) || {};
-        if (user.name) {
-            document.getElementById('sidebarName').textContent = user.name;
-            const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
-            const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-            document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
-            document.querySelector('.user-avatar').textContent = user.name.charAt(0);
-        }
+        if (window.updateSidebar) window.updateSidebar(user);
     </script>
 </body>
 </html>

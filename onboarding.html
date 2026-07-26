@@ -23,8 +23,12 @@
                 <div class="step-dot" id="dot4"></div>
             </div>
 
-            <!-- Step 1: المسار -->
+            <!-- Step 1: الاسم + المسار -->
             <div id="step1">
+                <div class="form-group">
+                    <label>اسمك الثلاثي</label>
+                    <input type="text" id="fullNameInput" placeholder="مثال: أحمد محمد نادي" style="width:100%; padding:12px 16px; border:1.5px solid var(--border); border-radius:12px; font-family:'Cairo',sans-serif; font-size:1rem; background:#f8fafc; box-sizing:border-box;">
+                </div>
                 <div class="form-group">
                     <label>ما هو مسارك؟</label>
                     <div class="options-grid" id="pathOptions">
@@ -128,13 +132,7 @@
         // 2. تحديث خيارات التخصص حسب المسار
         // ==========================================
         function updateSpecOptions(path) {
-            const map = {
-                medicine: ['رياضيات', 'فيزياء'],
-                engineering: ['برمجة', 'كيمياء'],
-                arts: ['علم النفس', 'اللغة الأجنبية الثانية'],
-                business: ['محاسبة', 'إدارة أعمال']
-            };
-            const specs = map[path] || [];
+            const specs = window.getSpecializationOptions(path);
             const container = document.getElementById('specOptions');
             container.innerHTML = '';
             specs.forEach(s => {
@@ -173,21 +171,11 @@
             } else {
                 specGroup.style.display = 'none';
                 subjectsDisplay.style.display = 'block';
-                const subjects = getYear3Subjects(formData.path);
+                const subjects = window.getUserSubjects({ year: '3', path: formData.path });
                 document.getElementById('subjectsText').textContent = subjects.join(' - ');
                 formData.specialization = '';
                 document.querySelectorAll('.spec-btn').forEach(b => b.classList.remove('selected'));
             }
-        }
-
-        function getYear3Subjects(path) {
-            const map = {
-                'medicine': ['أحياء', 'كيمياء'],
-                'engineering': ['رياضيات', 'فيزياء'],
-                'arts': ['جغرافيا', 'إحصاء'],
-                'business': ['اقتصاد', 'رياضيات']
-            };
-            return map[path] || [];
         }
 
         // ==========================================
@@ -234,7 +222,10 @@
 
         window.nextStep = function(current) {
             if (current === 1) {
+                const nameVal = document.getElementById('fullNameInput').value.trim();
+                if (!nameVal) { alert('من فضلك اكتب اسمك الثلاثي'); return; }
                 if (!formData.path) { alert('اختار مسارك أولاً'); return; }
+                formData.name = nameVal;
                 showStep(2);
                 updateYearDisplay();
                 return;
@@ -254,22 +245,23 @@
         window.prevStep = function(current) { showStep(current - 1); };
 
         window.finishOnboarding = function() {
+            // التحقق من وقت المذاكرة
             if (!formData.preferredTime) {
                 alert('اختار وقت المذاكرة المفضل');
                 return;
             }
-
-            const storedUser = JSON.parse(localStorage.getItem('ruaya_user') || '{}');
-            formData.name = storedUser.name || formData.name;
             if (!formData.name) {
-                alert('الاسم مطلوب. سجّل من جديد أو أكمل بياناتك.');
+                alert('في مشكلة في الاسم، ارجع لأول خطوة');
+                showStep(1);
                 return;
             }
 
+            // ✅ حفظ البيانات (مع تجاهل الأخطاء)
             try {
                 saveOnboardingData(formData);
             } catch (e) {
                 console.error('❌ خطأ:', e);
+                // حتى لو حصل خطأ، نحاول نروح للـ Dashboard
                 window.location.href = 'dashboard.html';
             }
         };

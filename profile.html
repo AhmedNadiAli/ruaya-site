@@ -54,7 +54,7 @@
             <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
             <li class="nav-item"><a href="profile.html" class="nav-link active"><span class="icon">👤</span> البروفايل</a></li>
             <li class="nav-item">
-                <a href="login.html" class="nav-link" onclick="logoutUser();">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
                     <span class="icon">🚪</span> تسجيل الخروج
                 </a>
             </li>
@@ -143,6 +143,53 @@
 
     <script src="js/app.js"></script>
     <script>
+        // ==========================================
+        // تحميل بيانات البروفايل مع التفاصيل
+        // ==========================================
+        function loadProfileWithDetails() {
+            const user = JSON.parse(localStorage.getItem('ruaya_user')) || {};
+
+            // تحديث Sidebar (دالة مشتركة من app.js بدل التكرار)
+            if (window.updateSidebar) window.updateSidebar(user);
+
+            // بيانات البروفايل
+            document.getElementById('profileName').textContent = user.name || 'أحمد نادي';
+            document.getElementById('profilePathYear').textContent = `${window.getPathName(user.path)} • ${window.getYearText(user.year)}`;
+
+            // الإحصائيات (نفس المنطق المستخدم في كل الموقع، بما فيه الستريك الحقيقي)
+            const stats = window.calculateStats(user.completedTasks || {}, user);
+            document.getElementById('profilePoints').textContent = stats.points;
+            document.getElementById('profileStreak').textContent = stats.streak;
+            document.getElementById('profileProgress').textContent = stats.progress + '%';
+
+            // تفاصيل الحساب
+            document.getElementById('detailPath').textContent = window.getPathName(user.path) || 'لم يحدد';
+            document.getElementById('detailSpecialization').textContent = user.specialization || 'لم يحدد';
+            document.getElementById('detailYear').textContent = window.getYearText(user.year);
+            document.getElementById('detailGoal').textContent = user.goalScore || '500';
+            const timeMap = { 'morning': 'الصباح', 'afternoon': 'بعد الظهر', 'evening': 'بالليل' };
+            document.getElementById('detailTime').textContent = timeMap[user.preferredTime] || 'لم يحدد';
+
+            // المواد الدراسية (دالة مشتركة من app.js)
+            const subjects = window.getUserSubjects(user);
+            document.getElementById('detailSubjects').textContent = subjects.length > 0 ? subjects.join(' - ') : 'لم تحدد';
+
+            // حقول التعديل
+            document.getElementById('editName').value = user.name || '';
+            document.getElementById('editPath').value = user.path || 'medicine';
+            document.getElementById('editYear').value = user.year || '2';
+
+            // الشارات (دالة مشتركة من app.js)
+            window.renderBadges(user.badges || {});
+        }
+
+        // ==========================================
+        // ربط الأحداث
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfileWithDetails();
+        });
+
         document.getElementById('avatarInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -153,6 +200,40 @@
                 reader.readAsDataURL(file);
             }
         });
+
+        // دالة حفظ البروفايل (معدلة)
+        window.saveProfile = async function() {
+            const user = JSON.parse(localStorage.getItem('ruaya_user')) || {};
+            const name = document.getElementById('editName').value.trim();
+            const path = document.getElementById('editPath').value;
+            const year = document.getElementById('editYear').value;
+
+            if (!name) {
+                document.getElementById('editMessage').textContent = '⚠️ الاسم مطلوب';
+                return;
+            }
+
+            const lastChange = user.lastPathChange ? new Date(user.lastPathChange) : null;
+            const now = new Date();
+            if (lastChange && (now - lastChange) < 24 * 60 * 60 * 1000) {
+                const remaining = 24 * 60 * 60 * 1000 - (now - lastChange);
+                const hours = Math.floor(remaining / (60 * 60 * 1000));
+                const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+                document.getElementById('editMessage').textContent = `⚠️ انتظر ${hours} ساعة و ${minutes} دقيقة`;
+                return;
+            }
+
+            user.name = name;
+            user.path = path;
+            user.year = year;
+            user.lastPathChange = now.toISOString();
+            localStorage.setItem('ruaya_user', JSON.stringify(user));
+
+            document.getElementById('editMessage').textContent = '✅ تم الحفظ!';
+            document.getElementById('editMessage').style.color = 'var(--success)';
+            setTimeout(() => loadProfileWithDetails(), 500);
+        };
+
     </script>
 </body>
 </html>

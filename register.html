@@ -210,15 +210,17 @@
             }
 
             try {
-                const result = await window.registerUser(fullName, schoolEmail, password, 'medicine', '2', {
-                    studentId,
-                    parentPhone
-                });
+                // محاولة التسجيل في السيرفر
+                const result = await window.registerUser(fullName, schoolEmail, password, 'medicine', '2', parentPhone);
 
+                // ملحوظة: registerUser بيرجع { user: {...} } وبيحفظ في localStorage بنفسه،
+                // فمفيش داعي نبني userData تاني هنا (وده كان فيه باج: كان بيتشيك على result.id
+                // اللي مبيكونش موجود أبدًا لأن الـ id جوه result.user.id، يعني التسجيل كان
+                // بيفشل من ناحية الواجهة حتى لو نجح فعليًا على السيرفر)
                 if (result && result.user && result.user.id) {
                     messageEl.textContent = '✅ تم التسجيل بنجاح! جارٍ التحويل...';
                     messageEl.className = 'success';
-
+                    
                     setTimeout(() => {
                         window.location.href = 'onboarding.html';
                     }, 1500);

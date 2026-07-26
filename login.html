@@ -128,8 +128,8 @@
             try {
                 const result = await window.loginUser(email, password);
                 if (result && result.user) {
+                    // ✅ حفظ بيانات المستخدم في localStorage
                     localStorage.setItem('ruaya_user', JSON.stringify(result.user));
-                    if (result.token) localStorage.setItem('ruaya_token', result.token);
 
                     // ✅ التحويل حسب حالة التهيئة (مع تحويل القيمة لـ Boolean)
                     const onboardingDone = result.user.onboardingDone === 1 || result.user.onboardingDone === true;

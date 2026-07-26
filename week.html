@@ -99,7 +99,7 @@
             <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
             <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
             <li class="nav-item">
-                <a href="login.html" class="nav-link" onclick="logoutUser();">
+                <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
                     <span class="icon">🚪</span> تسجيل الخروج
                 </a>
             </li>
@@ -272,17 +272,16 @@
                         const checkDiv = document.createElement('div');
                         checkDiv.className = 'task-check' + (isDone ? ' done' : '');
                         checkDiv.textContent = isDone ? '✓' : '';
-                        checkDiv.addEventListener('click', function(e) {
+                        checkDiv.addEventListener('click', async function(e) {
                             e.stopPropagation();
-                            const userData = getUserData();
-                            if (!userData.completedTasks) userData.completedTasks = {};
-                            userData.completedTasks[task.id] = !userData.completedTasks[task.id];
-                            saveUserData(userData);
-                            syncUserProgress(userData);
-                            
+                            // بتحدث محليًا فورًا وبتحاول تتزامن مع السيرفر في الخلفية
+                            // (بدل ما كانت بتتحفظ محليًا بس وتضيع أول ما تتزامن الداشبورد)
+                            const userData = await window.toggleTaskCompletion(task.id);
+                            if (!userData) return;
+
                             renderDays();
                             openDayDetail(index);
-                            
+
                             if (window.updateStatsInUI) {
                                 window.updateStatsInUI(userData);
                             }
@@ -323,13 +322,7 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 const user = getUserData();
-                if (user.name) {
-                    document.getElementById('sidebarName').textContent = user.name;
-                    const pathNames = { 'medicine': 'طب وعلوم حياة', 'engineering': 'هندسة وعلوم حاسب', 'arts': 'آداب وفنون', 'business': 'إدارة أعمال' };
-                    const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-                    document.getElementById('sidebarPath').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
-                    document.querySelector('.user-avatar').textContent = user.name.charAt(0);
-                }
+                if (window.updateSidebar) window.updateSidebar(user);
 
                 if (Object.keys(dayTasks).length === 0) {
                     dayTasks = {

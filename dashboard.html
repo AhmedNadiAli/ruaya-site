@@ -25,7 +25,7 @@
       <li class="nav-item"><a href="leaderboard.html" class="nav-link"><span class="icon">🏆</span> الأوائل</a></li>
       <li class="nav-item"><a href="profile.html" class="nav-link"><span class="icon">👤</span> البروفايل</a></li>
       <li class="nav-item">
-        <a href="login.html" class="nav-link" onclick="logoutUser();">
+        <a href="login.html" class="nav-link" onclick="localStorage.removeItem('ruaya_user');">
           <span class="icon">🚪</span> تسجيل الخروج
         </a>
       </li>
@@ -125,13 +125,84 @@
   </main>
 
   <img src="assets/leaf.png" class="deco-leaf" alt="" />
-    <script src="js/app.js"></script>
-    <script>
-        const now = new Date();
-        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-        document.getElementById('currentDate').textContent =
-            `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-    </script>
+  <script src="js/app.js"></script>
+  <script>
+    // تاريخ اليوم
+    const now = new Date();
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    document.getElementById('currentDate').textContent =
+      `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+    // تحميل الداشبورد (من app.js)
+    // ملحوظة: renderPathNodes بقى بينادى دايمًا جوه loadDashboard نفسها (في app.js)
+    // بدل ما كان بيتنادى بس في مسار احتياطي مستحيل يتنفذ عمليًا، وده كان بيخلي
+    // قسم "رحلتك هذا الشهر" يفضل فاضي تمامًا في التشغيل العادي
+    if (typeof loadDashboard === 'function') {
+      loadDashboard();
+    } else {
+      const user = JSON.parse(localStorage.getItem('ruaya_user') || '{}');
+      if (user.name) {
+        document.getElementById('userName').textContent = user.name.split(' ')[0];
+      }
+      if (window.updateSidebar) window.updateSidebar(user);
+      renderPathNodes(1);
+    }
+
+    // رسم مسار الأسابيع حسب التاريخ الفعلي (مش حسب نسبة إنجاز أسبوع واحد)
+    function renderPathNodes(currentWeek) {
+      const container = document.getElementById('pathNodes');
+      if (!container) return;
+      currentWeek = currentWeek || 1;
+
+      const weeks = [
+        { num: 1, title: 'الأسبوع الأول' },
+        { num: 2, title: 'الأسبوع الثاني' },
+        { num: 3, title: 'الأسبوع الثالث' },
+        { num: 4, title: 'الأسبوع الرابع' },
+        { num: 5, title: 'نهاية الشهر', isFinal: true }
+      ];
+
+      let html = '';
+      weeks.forEach((w, index) => {
+        const weekNum = index + 1;
+        let circleClass = 'locked';
+        let circleContent = w.isFinal ? '🏆' : w.num;
+        let badgeText = 'مقفل';
+        let badgeStyle = 'background:#f1f5f9;color:#94a3b8;';
+        let infoText = 'مقفل • يبدأ قريباً';
+
+        if (weekNum < currentWeek) {
+          circleClass = 'completed';
+          circleContent = '✓';
+          badgeText = 'مكتمل';
+          badgeStyle = 'background:#dcfce7;color:#16a34a;';
+          infoText = 'تم بنجاح • 100%';
+        } else if (weekNum === currentWeek && !w.isFinal) {
+          circleClass = 'current';
+          circleContent = w.num;
+          badgeText = 'الحالي';
+          badgeStyle = 'background:#ede9fe;color:#6d28d9;';
+          infoText = 'جاري الآن • 0%'; // ده رسم مبدئي بس، updateWeeklyProgress() هيحدثه بالنسبة الحقيقية فورًا
+        }
+
+        html += `
+          <div class="path-node" onclick="window.location.href='week.html'">
+            <div class="node-circle ${circleClass}">${circleContent}</div>
+            <div class="node-info">
+              <h4>${w.title}</h4>
+              <span>${infoText}</span>
+            </div>
+            <span class="node-badge" style="${badgeStyle}">${badgeText}</span>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // تصدير الدالة عشان app.js يقدر يستخدمها
+    window.renderPathNodes = renderPathNodes;
+  </script>
 </body>
 </html>
