@@ -1,5 +1,5 @@
 // ==========================================
-// رؤية - ملف JavaScript الرئيسي
+// رؤية - ملف JavaScript الرئيسي (نسخة بسيطة)
 // ==========================================
 
 const API_BASE_URL = 'https://ruaya-backend-production.up.railway.app/api';
@@ -50,163 +50,97 @@ async function getUser() {
     return localUser;
 }
 
-// ==========================================
-// ========== نظام المهام والأسبوع (مع الوقت) ==========
-// ==========================================
-
-// ========== بيانات الأيام والمهام ==========
-const weekDays = [
-    { name: 'السبت' },
-    { name: 'الأحد' },
-    { name: 'الإثنين' },
-    { name: 'الثلاثاء' },
-    { name: 'الأربعاء' },
-    { name: 'الخميس' },
-    { name: 'الجمعة' }
-];
-
+// ========== بيانات المهام ==========
 const dayTasks = {
     0: [
-        { id: 'sat_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'sat_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'sat_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
-        { id: 'sat_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-        { id: 'sat_study2', title: 'جلسة مذاكرة ٢ • كيمياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-        { id: 'sat_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'sat_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-        { id: 'sat_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'sat_study3', title: 'مذاكرة مسائية • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' }
+        { id: 'sat_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'sat_morning', title: 'روتين الصباح' },
+        { id: 'sat_study1', title: 'جلسة مذاكرة ١ • أحياء' },
+        { id: 'sat_break1', title: 'استراحة ١٥ دقيقة' },
+        { id: 'sat_study2', title: 'جلسة مذاكرة ٢ • كيمياء' },
+        { id: 'sat_dhuhr', title: 'صلاة الظهر' },
+        { id: 'sat_exercise', title: 'تمارين رياضية' },
+        { id: 'sat_maghrib', title: 'صلاة المغرب' },
+        { id: 'sat_study3', title: 'مذاكرة مسائية • رياضيات' }
     ],
     1: [
-        { id: 'sun_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'sun_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'sun_study1', title: 'جلسة مذاكرة ١ • رياضيات', desc: 'ساعة واحدة', time: '٨:٣٠' },
-        { id: 'sun_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-        { id: 'sun_study2', title: 'جلسة مذاكرة ٢ • فيزياء', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-        { id: 'sun_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'sun_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-        { id: 'sun_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'sun_study3', title: 'مذاكرة مسائية • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+        { id: 'sun_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'sun_morning', title: 'روتين الصباح' },
+        { id: 'sun_study1', title: 'جلسة مذاكرة ١ • رياضيات' },
+        { id: 'sun_break1', title: 'استراحة ١٥ دقيقة' },
+        { id: 'sun_study2', title: 'جلسة مذاكرة ٢ • فيزياء' },
+        { id: 'sun_dhuhr', title: 'صلاة الظهر' },
+        { id: 'sun_exercise', title: 'تمارين رياضية' },
+        { id: 'sun_maghrib', title: 'صلاة المغرب' },
+        { id: 'sun_study3', title: 'مذاكرة مسائية • أحياء' }
     ],
     2: [
-        { id: 'mon_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'mon_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'mon_study1', title: 'جلسة مذاكرة ١ • عربي', desc: 'ساعة واحدة', time: '٨:٣٠' },
-        { id: 'mon_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-        { id: 'mon_study2', title: 'جلسة مذاكرة ٢ • إنجليزي', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-        { id: 'mon_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'mon_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-        { id: 'mon_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'mon_study3', title: 'مذاكرة مسائية • تاريخ', desc: 'ساعة واحدة', time: '٨:٣٠' }
+        { id: 'mon_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'mon_morning', title: 'روتين الصباح' },
+        { id: 'mon_study1', title: 'جلسة مذاكرة ١ • عربي' },
+        { id: 'mon_break1', title: 'استراحة ١٥ دقيقة' },
+        { id: 'mon_study2', title: 'جلسة مذاكرة ٢ • إنجليزي' },
+        { id: 'mon_dhuhr', title: 'صلاة الظهر' },
+        { id: 'mon_exercise', title: 'تمارين رياضية' },
+        { id: 'mon_maghrib', title: 'صلاة المغرب' },
+        { id: 'mon_study3', title: 'مذاكرة مسائية • تاريخ' }
     ],
     3: [
-        { id: 'tue_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'tue_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'tue_study1', title: 'جلسة مذاكرة ١ • أحياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
-        { id: 'tue_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-        { id: 'tue_study2', title: 'جلسة مذاكرة ٢ • تاريخ', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-        { id: 'tue_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'tue_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-        { id: 'tue_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'tue_study3', title: 'مذاكرة مسائية • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+        { id: 'tue_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'tue_morning', title: 'روتين الصباح' },
+        { id: 'tue_study1', title: 'جلسة مذاكرة ١ • أحياء' },
+        { id: 'tue_break1', title: 'استراحة ١٥ دقيقة' },
+        { id: 'tue_study2', title: 'جلسة مذاكرة ٢ • تاريخ' },
+        { id: 'tue_dhuhr', title: 'صلاة الظهر' },
+        { id: 'tue_exercise', title: 'تمارين رياضية' },
+        { id: 'tue_maghrib', title: 'صلاة المغرب' },
+        { id: 'tue_study3', title: 'مذاكرة مسائية • كيمياء' }
     ],
     4: [
-        { id: 'wed_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'wed_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'wed_study1', title: 'جلسة مذاكرة ١ • كيمياء', desc: 'ساعة واحدة', time: '٨:٣٠' },
-        { id: 'wed_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '٩:٤٥' },
-        { id: 'wed_study2', title: 'جلسة مذاكرة ٢ • رياضيات', desc: 'ساعة واحدة', time: '١٠:٠٠' },
-        { id: 'wed_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'wed_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-        { id: 'wed_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'wed_study3', title: 'مذاكرة مسائية • فيزياء', desc: 'ساعة واحدة', time: '٨:٣٠' }
+        { id: 'wed_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'wed_morning', title: 'روتين الصباح' },
+        { id: 'wed_study1', title: 'جلسة مذاكرة ١ • كيمياء' },
+        { id: 'wed_break1', title: 'استراحة ١٥ دقيقة' },
+        { id: 'wed_study2', title: 'جلسة مذاكرة ٢ • رياضيات' },
+        { id: 'wed_dhuhr', title: 'صلاة الظهر' },
+        { id: 'wed_exercise', title: 'تمارين رياضية' },
+        { id: 'wed_maghrib', title: 'صلاة المغرب' },
+        { id: 'wed_study3', title: 'مذاكرة مسائية • فيزياء' }
     ],
     5: [
-        { id: 'thu_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'thu_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'thu_study1', title: 'مراجعة شاملة', desc: 'ساعتان', time: '٨:٣٠' },
-        { id: 'thu_break1', title: 'استراحة ١٥ دقيقة', desc: 'راحة قصيرة', time: '١٠:٣٠' },
-        { id: 'thu_study2', title: 'اختبار تجريبي', desc: 'ساعة واحدة', time: '١٠:٤٥' },
-        { id: 'thu_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'thu_exercise', title: 'تمارين رياضية', desc: '١٥ دقيقة', time: '٤:٠٠' },
-        { id: 'thu_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'thu_study3', title: 'راحة', desc: 'استعداد للجمعة', time: '٨:٣٠' }
+        { id: 'thu_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'thu_morning', title: 'روتين الصباح' },
+        { id: 'thu_study1', title: 'مراجعة شاملة' },
+        { id: 'thu_break1', title: 'استراحة ١٥ دقيقة' },
+        { id: 'thu_study2', title: 'اختبار تجريبي' },
+        { id: 'thu_dhuhr', title: 'صلاة الظهر' },
+        { id: 'thu_exercise', title: 'تمارين رياضية' },
+        { id: 'thu_maghrib', title: 'صلاة المغرب' },
+        { id: 'thu_study3', title: 'راحة' }
     ],
     6: [
-        { id: 'fri_fajr', title: 'صلاة الفجر + أذكار', desc: 'إلزامي', time: '٤:٣٠' },
-        { id: 'fri_morning', title: 'روتين الصباح', desc: 'استحمام • سنان • أذكار', time: '٧:٠٠' },
-        { id: 'fri_rest', title: 'راحة / هوايات', desc: 'يوم الجمعة راحة', time: '١٠:٠٠' },
-        { id: 'fri_dhuhr', title: 'صلاة الظهر', desc: 'إلزامي + تذكير', time: '١:٠١' },
-        { id: 'fri_maghrib', title: 'صلاة المغرب', desc: 'إلزامي + تذكير', time: '٧:٥٣' },
-        { id: 'fri_isha', title: 'عشاء + أذكار', desc: 'إلزامي', time: '٩:٢١' }
+        { id: 'fri_fajr', title: 'صلاة الفجر + أذكار' },
+        { id: 'fri_morning', title: 'روتين الصباح' },
+        { id: 'fri_rest', title: 'راحة / هوايات' },
+        { id: 'fri_dhuhr', title: 'صلاة الظهر' },
+        { id: 'fri_maghrib', title: 'صلاة المغرب' },
+        { id: 'fri_isha', title: 'عشاء + أذكار' }
     ]
 };
 
-// ========== دوال حساب النقاط والتقدم ==========
-function calculateStats(completedTasks) {
-    let totalTasks = 0;
+const weekDays = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+
+// ========== حساب النقاط ==========
+function calculatePoints(completedTasks) {
+    if (!completedTasks) return 0;
     let completed = 0;
     for (let i = 0; i < 7; i++) {
         const tasks = dayTasks[i] || [];
-        totalTasks += tasks.length;
         tasks.forEach(task => {
-            if (completedTasks && completedTasks[task.id]) completed++;
+            if (completedTasks[task.id]) completed++;
         });
     }
-    const points = completed * 10;
-    const progress = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
-    const streak = completed;
-    return { completed, points, progress, streak, totalTasks };
-}
-
-function getTodayTasks(completedTasks) {
-    const todayIndex = getCurrentDayIndex();
-    const tasks = dayTasks[todayIndex] || [];
-    let total = tasks.length;
-    let done = 0;
-    tasks.forEach(task => {
-        if (completedTasks && completedTasks[task.id]) done++;
-    });
-    return { total, done, remaining: total - done };
-}
-
-// ========== حساب اليوم الحالي (كل 12 ساعة) ==========
-function getCurrentDayIndex() {
-    const user = getLocalUser();
-    if (!user) return 0;
-    const weekStart = user.weekStartDate ? new Date(user.weekStartDate) : new Date();
-    // ضبط بداية الأسبوع على السبت
-    const startDay = weekStart.getDay();
-    const saturdayOffset = (startDay + 1) % 7;
-    const saturday = new Date(weekStart);
-    saturday.setDate(weekStart.getDate() - saturdayOffset);
-    
-    const now = new Date();
-    const diffHours = (now - saturday) / (1000 * 60 * 60);
-    // كل 12 ساعة يفتح يوم جديد (بدون شروط إضافية)
-    let unlocked = Math.floor(diffHours / 12) + 1;
-    if (unlocked < 1) unlocked = 1;
-    if (unlocked > 7) unlocked = 7;
-    return unlocked - 1; // index 0-based
-}
-
-// ========== تحديث الواجهة ==========
-function updateStatsInUI(user) {
-    const completedTasks = user.completedTasks || {};
-    const stats = calculateStats(completedTasks);
-    const todayStats = getTodayTasks(completedTasks);
-
-    const progressEl = document.getElementById('progressValue');
-    const streakEl = document.getElementById('streakValue');
-    const streakTextEl = document.getElementById('streakText');
-    const scoreEl = document.getElementById('scoreValue');
-    const tasksEl = document.getElementById('tasksValue');
-
-    if (progressEl) progressEl.textContent = stats.progress + '%';
-    if (streakEl) streakEl.textContent = stats.streak;
-    if (streakTextEl) streakTextEl.textContent = stats.streak;
-    if (scoreEl) scoreEl.textContent = stats.points;
-    if (tasksEl) tasksEl.textContent = todayStats.remaining;
+    return completed * 10;
 }
 
 // ========== دوال Dashboard ==========
@@ -218,30 +152,42 @@ async function loadDashboard() {
             return;
         }
 
-        document.getElementById('userName').textContent = user.name.split(' ')[0];
-        updateStatsInUI(user);
+        document.getElementById('userName').textContent = user.name.split(' ')[0] || 'أحمد';
 
-        document.querySelector('.user-avatar').textContent = user.name.charAt(0);
-        document.querySelector('.user-info h4').textContent = user.name;
-        const pathNames = {
-            'medicine': 'طب وعلوم حياة',
-            'engineering': 'هندسة وعلوم حاسب',
-            'arts': 'آداب وفنون',
-            'business': 'إدارة أعمال'
-        };
-        const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-        document.querySelector('.user-info span').textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
+        // حساب النقاط
+        const points = calculatePoints(user.completedTasks || {});
+        document.getElementById('scoreValue').textContent = points;
 
-        updateWeeklyProgress(user);
+        // تحديث باقي الإحصائيات (مؤقت)
+        document.getElementById('progressValue').textContent = '0%';
+        document.getElementById('streakValue').textContent = '0';
+        document.getElementById('streakText').textContent = '0';
+        document.getElementById('tasksValue').textContent = '0';
 
+        // تحديث الـ Sidebar
+        const avatar = document.querySelector('.user-avatar');
+        const nameEl = document.querySelector('.user-info h4');
+        const pathEl = document.querySelector('.user-info span');
+        if (avatar) avatar.textContent = user.name.charAt(0) || 'أ';
+        if (nameEl) nameEl.textContent = user.name || 'أحمد نادي';
+        if (pathEl) {
+            const pathNames = {
+                'medicine': 'طب وعلوم حياة',
+                'engineering': 'هندسة وعلوم حاسب',
+                'arts': 'آداب وفنون',
+                'business': 'إدارة أعمال'
+            };
+            const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
+            pathEl.textContent = `${pathNames[user.path] || 'مسار'} • ${yearText}`;
+        }
+
+        // تحديث كل 10 ثواني
         setInterval(async () => {
-            try {
-                const freshUser = await getUser();
-                if (freshUser) {
-                    updateStatsInUI(freshUser);
-                    updateWeeklyProgress(freshUser);
-                }
-            } catch (e) {}
+            const freshUser = await getUser();
+            if (freshUser) {
+                const newPoints = calculatePoints(freshUser.completedTasks || {});
+                document.getElementById('scoreValue').textContent = newPoints;
+            }
         }, 10000);
 
     } catch (error) {
@@ -249,184 +195,14 @@ async function loadDashboard() {
     }
 }
 
-// ========== تحديث رحلة الشهر ==========
-function updateWeeklyProgress(user) {
-    const completedTasks = user.completedTasks || {};
-    const stats = calculateStats(completedTasks);
-    const progress = stats.progress;
-
-    let currentWeek = 1;
-    if (progress >= 75) currentWeek = 4;
-    else if (progress >= 50) currentWeek = 3;
-    else if (progress >= 25) currentWeek = 2;
-    else currentWeek = 1;
-
-    const weekNodes = document.querySelectorAll('.path-node');
-    weekNodes.forEach((node, index) => {
-        const weekNum = index + 1;
-        const circle = node.querySelector('.node-circle');
-        const badge = node.querySelector('.node-badge');
-        const infoSpan = node.querySelector('.node-info span');
-
-        if (!circle) return;
-
-        circle.classList.remove('completed', 'current', 'locked');
-
-        if (weekNum < currentWeek) {
-            circle.classList.add('completed');
-            circle.textContent = '✓';
-            if (badge) {
-                badge.textContent = 'مكتمل';
-                badge.style.background = '#dcfce7';
-                badge.style.color = '#16a34a';
-            }
-            if (infoSpan) infoSpan.textContent = 'تم بنجاح • 100%';
-        } else if (weekNum === currentWeek) {
-            circle.classList.add('current');
-            circle.textContent = weekNum;
-            if (badge) {
-                badge.textContent = 'الحالي';
-                badge.style.background = '#ede9fe';
-                badge.style.color = '#6d28d9';
-            }
-            if (infoSpan) {
-                const weekProgress = Math.min(progress - ((currentWeek - 1) * 25), 25);
-                infoSpan.textContent = `جاري الآن • ${Math.round(weekProgress)}%`;
-            }
-        } else {
-            circle.classList.add('locked');
-            circle.textContent = weekNum;
-            if (badge) {
-                badge.textContent = 'مقفل';
-                badge.style.background = '#f1f5f9';
-                badge.style.color = '#94a3b8';
-            }
-            if (infoSpan) infoSpan.textContent = 'مقفل • يبدأ قريباً';
-        }
-    });
-}
-
-// ========== دوال Profile ==========
-async function loadProfile() {
-    try {
-        const user = await getUser();
-        if (!user) return;
-
-        document.getElementById('profileName').textContent = user.name;
-        const pathNames = {
-            'medicine': 'طب وعلوم حياة',
-            'engineering': 'هندسة وعلوم حاسب',
-            'arts': 'آداب وفنون',
-            'business': 'إدارة أعمال'
-        };
-        const yearText = user.year === '2' ? 'السنة التانية' : 'السنة التالتة';
-        document.getElementById('profilePathYear').textContent = `${pathNames[user.path]} • ${yearText}`;
-        
-        const stats = calculateStats(user.completedTasks || {});
-        document.getElementById('profilePoints').textContent = stats.points;
-        document.getElementById('profileStreak').textContent = stats.streak;
-        document.getElementById('profileProgress').textContent = stats.progress + '%';
-
-        document.getElementById('editName').value = user.name;
-        document.getElementById('editPath').value = user.path;
-        document.getElementById('editYear').value = user.year;
-
-        renderBadges(user.badges || {});
-    } catch (error) {
-        console.error('❌ خطأ في تحميل البروفايل:', error);
-    }
-}
-
-function renderBadges(userBadges) {
-    const allBadges = [
-        { id: 'first_day', icon: '🌟', name: 'البداية', desc: 'أول يوم في الموقع' },
-        { id: 'streak_7', icon: '🔥', name: 'المثابر', desc: '7 أيام متواصلة' },
-        { id: 'streak_30', icon: '⚡', name: 'الأسطورة', desc: '30 يوم متواصلة' },
-        { id: 'week_complete', icon: '🏆', name: 'الأسبوع المثالي', desc: 'أسبوع كامل مكتمل' },
-        { id: 'month_complete', icon: '👑', name: 'الملك', desc: 'شهر كامل مكتمل' },
-        { id: 'points_100', icon: '⭐', name: 'النجم الصاعد', desc: '100 نقطة' },
-        { id: 'points_1000', icon: '💎', name: 'الأسطورة', desc: '1000 نقطة' }
-    ];
-
-    const grid = document.getElementById('badgesGrid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    allBadges.forEach(badge => {
-        const unlocked = userBadges[badge.id] === true;
-        const card = document.createElement('div');
-        card.className = `badge-card ${unlocked ? 'unlocked' : 'locked'}`;
-        card.innerHTML = `
-            <span class="badge-icon">${unlocked ? badge.icon : '🔒'}</span>
-            <div class="badge-name">${badge.name}</div>
-            <div class="badge-desc">${badge.desc}</div>
-        `;
-        grid.appendChild(card);
-    });
-}
-
-async function saveProfile() {
-    try {
-        const user = await getUser();
-        if (!user) return;
-
-        const name = document.getElementById('editName').value.trim();
-        const path = document.getElementById('editPath').value;
-        const year = document.getElementById('editYear').value;
-
-        if (!name) {
-            document.getElementById('editMessage').textContent = '⚠️ الاسم مطلوب';
-            return;
-        }
-
-        const lastChange = user.lastPathChange ? new Date(user.lastPathChange) : null;
-        const now = new Date();
-        if (lastChange && (now - lastChange) < 24 * 60 * 60 * 1000) {
-            const remaining = 24 * 60 * 60 * 1000 - (now - lastChange);
-            const hours = Math.floor(remaining / (60 * 60 * 1000));
-            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-            document.getElementById('editMessage').textContent = `⚠️ انتظر ${hours} ساعة و ${minutes} دقيقة`;
-            return;
-        }
-
-        const updatedUser = {
-            name: name,
-            path: path,
-            year: year,
-            lastPathChange: now.toISOString()
-        };
-
-        if (user.id) {
-            try {
-                await apiRequest(`/users/${user.id}`, 'PUT', updatedUser);
-                const freshUser = await apiRequest(`/users/${user.id}`, 'GET');
-                saveLocalUser(freshUser);
-            } catch (e) {
-                console.warn('⚠️ فشل تحديث السيرفر، نستخدم localStorage');
-                saveLocalUser({ ...user, ...updatedUser });
-            }
-        } else {
-            saveLocalUser({ ...user, ...updatedUser });
-        }
-
-        document.getElementById('editMessage').textContent = '✅ تم الحفظ!';
-        document.getElementById('editMessage').style.color = 'var(--success)';
-        setTimeout(() => loadProfile(), 500);
-    } catch (error) {
-        console.error('❌ خطأ في حفظ البروفايل:', error);
-        document.getElementById('editMessage').textContent = '❌ حدث خطأ';
-    }
-}
-
-// ========== الأوائل (Leaderboard) ==========
+// ========== الأوائل ==========
 async function loadLeaderboard() {
     const container = document.getElementById('leaderboardList');
     if (!container) return;
     container.innerHTML = '<div class="loading">⏳ جاري التحميل...</div>';
 
     try {
-        const url = `${API_BASE_URL}/users`;
-        const response = await fetch(url);
+        const response = await fetch(`${API_BASE_URL}/users`);
         if (!response.ok) throw new Error('فشل في جلب البيانات');
         let users = await response.json();
 
@@ -435,17 +211,14 @@ async function loadLeaderboard() {
             if (localUser) {
                 users = [localUser];
             } else {
-                container.innerHTML = '<div class="loading">📭 لا يوجد مستخدمين حتى الآن</div>';
+                container.innerHTML = '<div class="loading">📭 لا يوجد مستخدمين</div>';
                 return;
             }
         }
 
         users.forEach(user => {
-            const stats = calculateStats(user.completedTasks || {});
-            user._points = stats.points;
-            user._streak = stats.streak;
-            user._progress = stats.progress;
-            user._badgesCount = user.badges ? Object.values(user.badges).filter(v => v === true).length : 0;
+            const points = calculatePoints(user.completedTasks || {});
+            user._points = points;
         });
 
         users.sort((a, b) => (b._points || 0) - (a._points || 0));
@@ -464,9 +237,6 @@ async function loadLeaderboard() {
                     </div>
                     <div class="stats">
                         <div class="stat"><div class="value">⭐ ${user._points || 0}</div><div class="label">نقاط</div></div>
-                        <div class="stat"><div class="value">🔥 ${user._streak || 0}</div><div class="label">توالي</div></div>
-                        <div class="stat"><div class="value">📈 ${user._progress || 0}%</div><div class="label">تقدم</div></div>
-                        <div class="badges-mini">${'🏅'.repeat(Math.min(user._badgesCount || 0, 5))}</div>
                     </div>
                 </div>
             `;
@@ -474,93 +244,9 @@ async function loadLeaderboard() {
 
         container.innerHTML = html;
 
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.filter === 'points');
-        });
-
     } catch (error) {
-        console.error('❌ خطأ في جلب الأوائل:', error);
-        container.innerHTML = `
-            <div class="loading">
-                ❌ السيرفر مش شغال<br>
-                <span style="font-size:0.8rem;color:var(--text-muted);">
-                    تأكد من تشغيل السيرفر (npx nodemon server.js)
-                </span>
-            </div>
-        `;
+        container.innerHTML = '<div class="loading">❌ السيرفر مش شغال</div>';
     }
-}
-
-// ========== دوال Subjects ==========
-function loadSubjects() {
-    const user = getLocalUser();
-    if (!user) return;
-
-    const subjectsByYear = {
-        '2': {
-            'medicine': ['عربي', 'إنجليزي', 'تاريخ وطني', 'رياضيات', 'فيزياء'],
-            'engineering': ['عربي', 'إنجليزي', 'تاريخ وطني', 'برمجة', 'كيمياء'],
-            'arts': ['عربي', 'إنجليزي', 'تاريخ وطني', 'علم النفس', 'لغة أجنبية ثانية'],
-            'business': ['عربي', 'إنجليزي', 'تاريخ وطني', 'محاسبة', 'إدارة أعمال']
-        },
-        '3': {
-            'medicine': ['أحياء', 'كيمياء'],
-            'engineering': ['رياضيات', 'فيزياء'],
-            'arts': ['جغرافيا', 'إحصاء'],
-            'business': ['اقتصاد', 'رياضيات']
-        }
-    };
-
-    let subjects = subjectsByYear[user.year]?.[user.path] || [];
-
-    if (user.year === '2' && user.specialization) {
-        const baseSubjects = ['عربي', 'إنجليزي', 'تاريخ وطني'];
-        subjects = [...baseSubjects, user.specialization];
-    }
-
-    subjects = [...new Set(subjects)];
-
-    const container = document.getElementById('subjectsGrid');
-    if (!container) return;
-
-    if (subjects.length === 0) {
-        container.innerHTML = '<div class="loading">📭 لا توجد مواد</div>';
-        return;
-    }
-
-    const icons = {
-        'عربي': '📖', 'إنجليزي': '🇬🇧', 'تاريخ وطني': '📜', 'رياضيات': '📐',
-        'فيزياء': '⚡', 'برمجة': '💻', 'كيمياء': '🧪', 'علم النفس': '🧠',
-        'لغة أجنبية ثانية': '🗣️', 'محاسبة': '📊', 'إدارة أعمال': '📈',
-        'أحياء': '🧬', 'جغرافيا': '🌍', 'إحصاء': '📉', 'اقتصاد': '💰'
-    };
-
-    let html = '';
-    subjects.forEach(subject => {
-        const icon = icons[subject] || '📚';
-        const isElective = subject === user.specialization && user.year === '2';
-        const type = isElective ? 'اختياري' : (user.year === '2' ? 'أساسي' : 'تخصص');
-        html += `
-            <div class="subject-card" onclick="alert('📖 ${subject}\nقريباً سيتم إضافة المحتوى')">
-                <span class="subject-icon">${icon}</span>
-                <div class="subject-name">${subject}</div>
-                <div class="subject-type">${type}</div>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
-// ========== دوال Onboarding UI ==========
-function getSpecializationOptions(path) {
-    const map = {
-        medicine: ['رياضيات', 'فيزياء'],
-        engineering: ['برمجة', 'كيمياء'],
-        arts: ['علم النفس', 'اللغة الأجنبية الثانية'],
-        business: ['محاسبة', 'إدارة أعمال']
-    };
-    return map[path] || [];
 }
 
 // ========== دوال Onboarding ==========
@@ -581,10 +267,7 @@ async function saveOnboardingData(formData) {
         user.preferredTime = formData.preferredTime;
         user.goalScore = formData.goalScore || 500;
         user.onboardingDone = true;
-        if (!user.weekStartDate) {
-            user.weekStartDate = new Date().toISOString();
-        }
-        
+
         saveLocalUser(user);
 
         if (user.id) {
@@ -597,18 +280,15 @@ async function saveOnboardingData(formData) {
                     weakSubjects: user.weakSubjects,
                     preferredTime: user.preferredTime,
                     goalScore: user.goalScore,
-                    onboardingDone: true,
-                    weekStartDate: user.weekStartDate
+                    onboardingDone: true
                 });
-                console.log('✅ تم حفظ التهيئة على السيرفر');
             } catch (e) {
-                console.warn('⚠️ فشل حفظ على السيرفر، البيانات محفوظة محلياً');
+                console.warn('⚠️ فشل حفظ على السيرفر');
             }
         }
 
         window.location.href = 'dashboard.html';
     } catch (error) {
-        console.error('❌ خطأ في حفظ التهيئة:', error);
         window.location.href = 'dashboard.html';
     }
 }
@@ -622,15 +302,11 @@ window.loginUser = async function(email, password) {
                 ...result.user,
                 onboardingDone: result.user.onboardingDone === 1 || result.user.onboardingDone === true
             };
-            if (!userData.weekStartDate) {
-                userData.weekStartDate = new Date().toISOString();
-            }
             saveLocalUser(userData);
             return { user: userData };
         }
         throw new Error('بيانات غير صحيحة');
     } catch (error) {
-        console.error('❌ خطأ في تسجيل الدخول:', error);
         throw error;
     }
 };
@@ -659,7 +335,6 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
                 weeklyProgress: {},
                 lastPathChange: null,
                 avatarUrl: '',
-                weekStartDate: new Date().toISOString(),
                 createdAt: new Date().toISOString()
             };
             saveLocalUser(userData);
@@ -667,52 +342,38 @@ window.registerUser = async function(name, email, password, path = 'medicine', y
         }
         throw new Error('فشل التسجيل');
     } catch (error) {
-        console.error('❌ خطأ في التسجيل:', error);
         throw error;
     }
 };
 
-// ========== تشغيل الصفحات ==========
-document.addEventListener('DOMContentLoaded', function() {
-    const path = window.location.pathname.split('/').pop();
-    if (path === 'dashboard.html' || path === '') loadDashboard();
-    else if (path === 'profile.html') loadProfile();
-    else if (path === 'leaderboard.html') loadLeaderboard();
-    else if (path === 'subjects.html') loadSubjects();
-});
-
-// ========== تصدير الدوال ==========
+// ========== دوال التصدير ==========
 window.saveOnboardingData = saveOnboardingData;
-window.getSpecializationOptions = getSpecializationOptions;
-window.saveProfile = saveProfile;
+window.getSpecializationOptions = function(path) {
+    const map = {
+        medicine: ['رياضيات', 'فيزياء'],
+        engineering: ['برمجة', 'كيمياء'],
+        arts: ['علم النفس', 'اللغة الأجنبية الثانية'],
+        business: ['محاسبة', 'إدارة أعمال']
+    };
+    return map[path] || [];
+};
 window.loadLeaderboard = loadLeaderboard;
-window.loadSubjects = loadSubjects;
 window.getUser = getUser;
 window.registerUser = registerUser;
 window.loginUser = loginUser;
 window.loadDashboard = loadDashboard;
-window.updateStatsInUI = updateStatsInUI;
-window.calculateStats = calculateStats;
-window.getCurrentDayIndex = getCurrentDayIndex;
-window.getTodayTasks = getTodayTasks;
+window.calculatePoints = calculatePoints;
 window.dayTasks = dayTasks;
 window.weekDays = weekDays;
 
 // ==========================================
 // ========== Dark Mode ==========
 // ==========================================
-
 function applyDarkMode() {
     const isDark = localStorage.getItem('darkMode') === 'true';
-    if (isDark) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
+    document.body.classList.toggle('dark-mode', isDark);
     const toggleBtn = document.getElementById('darkModeToggle');
-    if (toggleBtn) {
-        toggleBtn.textContent = isDark ? '☀️' : '🌙';
-    }
+    if (toggleBtn) toggleBtn.textContent = isDark ? '☀️' : '🌙';
 }
 
 function toggleDarkMode() {
@@ -723,38 +384,12 @@ function toggleDarkMode() {
 
 document.addEventListener('DOMContentLoaded', function() {
     applyDarkMode();
+    const path = window.location.pathname.split('/').pop();
+    if (path === 'dashboard.html' || path === '') loadDashboard();
+    else if (path === 'leaderboard.html') loadLeaderboard();
 });
 
 window.toggleDarkMode = toggleDarkMode;
 window.applyDarkMode = applyDarkMode;
 
-// ==========================================
-// دوال المواد حسب المسار والسنة
-// ==========================================
-function getUserSubjects(user) {
-    if (!user) return [];
-    const year = user.year || '2';
-    const path = user.path || 'medicine';
-    const specialization = user.specialization || '';
-
-    const core = ['عربي', 'إنجليزي', 'تاريخ وطني'];
-    if (year === '2') {
-        if (specialization) {
-            return [...core, specialization];
-        }
-        return core;
-    } else {
-        const map = {
-            'medicine': ['أحياء', 'كيمياء'],
-            'engineering': ['رياضيات', 'فيزياء'],
-            'arts': ['جغرافيا', 'إحصاء'],
-            'business': ['اقتصاد', 'رياضيات']
-        };
-        return map[path] || [];
-    }
-}
-
-window.getUserSubjects = getUserSubjects;
-
-console.log('🚀 رؤية شغالة (السيرفر هو الأساسي، localStorage احتياطي)');
-console.log('✅ نظام فتح الأيام: كل 12 ساعة (بدون شروط إضافية)');
+console.log('🚀 رؤية شغالة (نسخة مبسطة)');
